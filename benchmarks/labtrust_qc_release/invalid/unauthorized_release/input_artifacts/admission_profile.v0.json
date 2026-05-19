@@ -1,0 +1,9 @@
+{
+  "schema_version": "v0",
+  "profile_id": "default-admission",
+  "required_artifacts": [
+    "runtime_trace",
+    "trace_certificate",
+    "science_claim_bundle"
+  ]
+}

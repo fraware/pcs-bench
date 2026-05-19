@@ -1,0 +1,15 @@
+{
+  "schema_version": "v0",
+  "case_id": "lean-unauthorized-theorem-v0",
+  "task_id": "formal-trust-kernel-v0",
+  "workflow_id": "pcs.formal_trust_kernel",
+  "case_kind": "unauthorized_theorem",
+  "input_artifacts": { "release_dir": "input_artifacts/" },
+  "expected_status": "Rejected",
+  "expected_failure_code": "unauthorized_theorem",
+  "expected_responsible_component": "formal_kernel",
+  "expected_repair_hint_kind": "authorize_theorem_in_kernel",
+  "source_repo": "https://github.com/SentinelOps-CI/pcs-core",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000006"
+}

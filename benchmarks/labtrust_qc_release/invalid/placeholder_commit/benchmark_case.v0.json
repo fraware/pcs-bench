@@ -1,0 +1,17 @@
+{
+  "schema_version": "v0",
+  "case_id": "labtrust-placeholder-commit-v0",
+  "task_id": "labtrust-qc-release-failure-localization-v0",
+  "workflow_id": "hospital_lab.qc_release",
+  "case_kind": "placeholder_commit",
+  "input_artifacts": {
+    "release_dir": "input_artifacts/"
+  },
+  "expected_status": "Rejected",
+  "expected_failure_code": "placeholder_commit_detected",
+  "expected_responsible_component": "runtime_producer",
+  "expected_repair_hint_kind": "pin_source_commit",
+  "source_repo": "https://github.com/fraware/LabTrust-Gym",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+}

@@ -1,0 +1,17 @@
+suite_id: cross-domain-v0
+workflow_id: pcs.cross_domain
+domain: portability
+description: Measures PCS protocol portability across LabTrust, tool-use, and computation domains.
+
+cases:
+  - case_id: cross-domain-protocol-v0
+    path: valid/cross-domain-protocol-v0/benchmark_case.v0.json
+  - case_id: cross-domain-tool-use-v0
+    path: valid/cross-domain-tool-use-v0/benchmark_case.v0.json
+  - case_id: cross-domain-computation-v0
+    path: valid/cross-domain-computation-v0/benchmark_case.v0.json
+
+metrics:
+  - cross_domain_portability_score
+  - release_reproducibility_score
+  - registry_coverage_score

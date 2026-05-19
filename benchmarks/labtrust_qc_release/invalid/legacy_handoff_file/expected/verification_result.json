@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "handoff_schema_mismatch",
+  "responsible_component": "handoff",
+  "repair_hint_kind": "upgrade_handoff_manifest"
+}

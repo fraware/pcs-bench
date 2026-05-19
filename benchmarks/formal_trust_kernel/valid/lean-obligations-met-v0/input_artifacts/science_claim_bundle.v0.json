@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "claim_id": "lean-obligations-met-v0",
+  "workflow_id": "pcs.formal_trust_kernel",
+  "status": "Admitted"
+}

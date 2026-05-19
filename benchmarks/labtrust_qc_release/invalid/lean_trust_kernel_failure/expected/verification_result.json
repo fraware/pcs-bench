@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "lean_theorem_failed",
+  "responsible_component": "formal_kernel",
+  "repair_hint_kind": "fix_proof_obligation"
+}

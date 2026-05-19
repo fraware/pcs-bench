@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "obligation_id": "obligation-labtrust-lean-kernel-failure-v0",
+  "theorem": "release_integrity",
+  "required": true
+}

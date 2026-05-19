@@ -1,0 +1,54 @@
+name: PCS Benchmark
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install pcs-bench
+        run: pip install -e ".[dev]" && pip install ruff
+
+      - name: Ruff
+        run: ruff check src tests
+
+      - name: Materialize fixtures
+        run: python scripts/materialize_fixtures.py
+
+      - name: Update fixture manifest
+        run: pcs-bench verify-fixtures --write
+
+      - name: Validate all cases
+        run: pcs-bench validate-cases --suite all --dry-run
+
+      - name: Run full benchmark (simulate)
+        run: pcs-bench run --suite all --simulate --ci --out reports/ci.json
+
+      - name: Generate Markdown report
+        run: pcs-bench report --input reports/ci.json --format markdown --out reports/ci.md
+
+      - name: Export reviewer packet
+        run: pcs-bench packet --report reports/ci.json --out packets/ci
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcs-bench-report-py${{ matrix.python-version }}
+          path: |
+            reports/ci.json
+            reports/ci.md

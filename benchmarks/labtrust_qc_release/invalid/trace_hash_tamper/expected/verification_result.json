@@ -1,0 +1,13 @@
+{
+  "status": "Rejected",
+  "failure_code": "trace_hash_mismatch",
+  "responsible_component": "runtime_producer",
+  "repair_hint_kind": "regenerate_trace_or_certificate",
+  "repair_hint": {
+    "responsible_component": "runtime_producer",
+    "failure_code": "trace_hash_mismatch",
+    "artifact_path": "runtime_trace.json",
+    "repair_kind": "regenerate_trace_or_certificate",
+    "action": "labtrust regenerate-release-protocol"
+  }
+}

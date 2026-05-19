@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "claim_id": "labtrust-trace-hash-tamper-v0",
+  "workflow_id": "hospital_lab.qc_release",
+  "status": "Rejected"
+}

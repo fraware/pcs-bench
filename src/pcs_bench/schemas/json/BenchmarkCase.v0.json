@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://pcs.dev/schemas/BenchmarkCase.v0.json",
+  "title": "BenchmarkCase.v0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "case_id",
+    "task_id",
+    "workflow_id",
+    "case_kind",
+    "expected_status"
+  ],
+  "properties": {
+    "schema_version": { "const": "v0" },
+    "case_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": "string", "minLength": 1 },
+    "workflow_id": { "type": "string", "minLength": 1 },
+    "case_kind": { "type": "string", "minLength": 1 },
+    "input_artifacts": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "expected_status": { "enum": ["Admitted", "Accepted", "Rejected"] },
+    "expected_failure_code": { "type": ["string", "null"] },
+    "expected_responsible_component": { "type": ["string", "null"] },
+    "expected_repair_hint_kind": { "type": ["string", "null"] },
+    "source_repo": { "type": ["string", "null"] },
+    "source_commit": { "type": ["string", "null"] },
+    "signature_or_digest": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,15 @@
+suite_id: formal-trust-kernel-v0
+workflow_id: pcs.formal_trust_kernel
+domain: formal_methods
+description: Benchmarks Lean trust-kernel obligations and check results.
+
+cases:
+  - case_id: lean-obligations-met-v0
+    path: valid/lean-obligations-met-v0/benchmark_case.v0.json
+  - case_id: lean-unauthorized-theorem-v0
+    path: invalid/lean-unauthorized-theorem-v0/benchmark_case.v0.json
+
+metrics:
+  - formal_check_coverage_score
+  - failure_localization_accuracy
+  - repair_hint_quality_score

@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "obligation_id": "trust-envelope-v0",
+  "theorem": "release_integrity",
+  "required": true
+}

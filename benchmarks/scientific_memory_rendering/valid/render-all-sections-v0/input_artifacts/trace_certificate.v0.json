@@ -1,0 +1,12 @@
+{
+  "schema_version": "v0",
+  "certificate_id": "cert-render-all-sections-v0",
+  "trace_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "property_id": "hospital_lab.qc_release.safety",
+  "checker": "certifyedge",
+  "checker_version": "0.1.0",
+  "status": "Valid",
+  "source_repo": "https://github.com/fraware/CertifyEdge",
+  "source_commit": "deadbeef",
+  "signature_or_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+}

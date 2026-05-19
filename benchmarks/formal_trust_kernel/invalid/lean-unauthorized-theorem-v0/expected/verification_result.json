@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "unauthorized_theorem",
+  "responsible_component": "formal_kernel",
+  "repair_hint_kind": "authorize_theorem_in_kernel"
+}

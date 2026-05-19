@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "missing_qc_result",
+  "responsible_component": "runtime_producer",
+  "repair_hint_kind": "complete_qc_before_release"
+}

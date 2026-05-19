@@ -1,0 +1,12 @@
+{
+  "schema_version": "v0",
+  "case_id": "cross-domain-protocol-v0",
+  "task_id": "cross-domain-portability-v0",
+  "workflow_id": "hospital_lab.qc_release",
+  "case_kind": "cross_domain_valid",
+  "input_artifacts": { "release_dir": "input_artifacts/" },
+  "expected_status": "Admitted",
+  "source_repo": "https://github.com/SentinelOps-CI/pcs-core",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000009"
+}

@@ -1,0 +1,16 @@
+suite_id: tool-use-safety-v0
+workflow_id: agent_tool_use.safety_v0
+domain: agent_safety
+description: Benchmarks ToolUseCertificate.v0 profiles, PF admission, and failure localization.
+
+cases:
+  - case_id: tool-use-valid-v0
+    path: valid/tool-use-valid-v0/benchmark_case.v0.json
+  - case_id: tool-use-policy-hash-mismatch-v0
+    path: invalid/policy_hash_mismatch/benchmark_case.v0.json
+
+metrics:
+  - failure_localization_accuracy
+  - certificate_completeness_score
+  - repair_hint_quality_score
+  - registry_coverage_score

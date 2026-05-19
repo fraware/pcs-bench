@@ -1,0 +1,16 @@
+suite_id: computation-reproducibility-v0
+workflow_id: scientific_computation.reproducibility_v0
+domain: scientific_computation
+description: Benchmarks ComputationWitness.v0 and reproducibility admission.
+
+cases:
+  - case_id: computation-valid-v0
+    path: valid/computation-valid-v0/benchmark_case.v0.json
+  - case_id: computation-result-hash-mismatch-v0
+    path: invalid/result_hash_mismatch/benchmark_case.v0.json
+
+metrics:
+  - release_reproducibility_score
+  - certificate_completeness_score
+  - failure_localization_accuracy
+  - repair_hint_quality_score

@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "result_hash_mismatch",
+  "responsible_component": "verifier",
+  "repair_hint_kind": "recompute_and_witness"
+}

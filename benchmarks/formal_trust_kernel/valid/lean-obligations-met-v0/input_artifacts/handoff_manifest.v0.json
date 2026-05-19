@@ -1,0 +1,9 @@
+{
+  "schema_version": "v0",
+  "handoff_id": "handoff-lean-obligations-met-v0",
+  "workflow_id": "pcs.formal_trust_kernel",
+  "artifacts": [
+    "runtime_trace",
+    "trace_certificate"
+  ]
+}

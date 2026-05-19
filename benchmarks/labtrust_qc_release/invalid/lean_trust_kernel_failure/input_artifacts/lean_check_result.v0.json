@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "status": "failed",
+  "theorem": "release_integrity",
+  "failure_code": "lean_theorem_failed"
+}

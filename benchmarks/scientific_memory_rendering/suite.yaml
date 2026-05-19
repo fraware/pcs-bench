@@ -1,0 +1,15 @@
+suite_id: scientific-memory-rendering-v0
+workflow_id: pcs.scientific_memory
+domain: human_interpretability
+description: Benchmarks Scientific Memory import, rendering, and required evidence sections.
+
+cases:
+  - case_id: render-all-sections-v0
+    path: valid/render-all-sections-v0/benchmark_case.v0.json
+  - case_id: missing-formal-section-v0
+    path: invalid/missing-formal-section-v0/benchmark_case.v0.json
+
+metrics:
+  - scientific_memory_interpretability_score
+  - failure_localization_accuracy
+  - repair_hint_quality_score

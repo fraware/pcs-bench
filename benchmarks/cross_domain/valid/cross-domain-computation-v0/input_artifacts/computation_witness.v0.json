@@ -1,0 +1,14 @@
+{
+  "schema_version": "v0",
+  "witness_id": "witness-cross-domain-computation-v0",
+  "result_hashes": [
+    "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+  ],
+  "property_id": "scientific_computation.reproducibility_v0",
+  "checker": "certifyedge",
+  "checker_version": "0.1.0",
+  "status": "Valid",
+  "source_repo": "https://github.com/fraware/CertifyEdge",
+  "source_commit": "deadbeef",
+  "signature_or_digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+}

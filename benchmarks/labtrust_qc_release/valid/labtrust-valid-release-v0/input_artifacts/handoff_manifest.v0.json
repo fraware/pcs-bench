@@ -1,0 +1,9 @@
+{
+  "schema_version": "v0",
+  "handoff_id": "handoff-labtrust-valid-release-v0",
+  "workflow_id": "hospital_lab.qc_release",
+  "artifacts": [
+    "runtime_trace",
+    "trace_certificate"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "manifest": {
+    "schema_version": "v0",
+    "release_id": "TEMPLATE",
+    "workflow_id": "TEMPLATE_WORKFLOW",
+    "status": "Admitted"
+  },
+  "registry": {
+    "schema_version": "v0",
+    "artifacts": [
+      {
+        "artifact_id": "runtime_trace",
+        "producer": "runtime_producer",
+        "checked": true,
+        "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      },
+      {
+        "artifact_id": "trace_certificate",
+        "producer": "certificate_producer",
+        "checked": true,
+        "hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      {
+        "artifact_id": "science_claim_bundle",
+        "producer": "verifier",
+        "checked": true,
+        "hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "handoff": {
+    "schema_version": "v0",
+    "handoff_id": "handoff-TEMPLATE",
+    "workflow_id": "TEMPLATE_WORKFLOW",
+    "artifacts": ["runtime_trace", "trace_certificate"]
+  },
+  "certificate": {
+    "schema_version": "v0",
+    "certificate_id": "cert-TEMPLATE",
+    "trace_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "property_id": "hospital_lab.qc_release.safety",
+    "checker": "certifyedge",
+    "checker_version": "0.1.0",
+    "status": "Valid",
+    "source_repo": "https://github.com/fraware/CertifyEdge",
+    "source_commit": "deadbeef",
+    "signature_or_digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "bundle": {
+    "schema_version": "v0",
+    "claim_id": "TEMPLATE",
+    "workflow_id": "TEMPLATE_WORKFLOW",
+    "status": "Admitted"
+  },
+  "admission_profile": {
+    "schema_version": "v0",
+    "profile_id": "default-admission",
+    "required_artifacts": ["runtime_trace", "trace_certificate", "science_claim_bundle"]
+  }
+}

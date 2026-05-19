@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "claim_id": "cross-domain-tool-use-v0",
+  "workflow_id": "agent_tool_use.safety_v0",
+  "status": "Admitted"
+}

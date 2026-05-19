@@ -1,0 +1,35 @@
+suite_id: labtrust-qc-release-v0
+workflow_id: hospital_lab.qc_release
+domain: process_safety
+description: >
+  Benchmarks PCS release-chain integrity and failure localization
+  for the LabTrust QC workflow.
+
+cases:
+  - case_id: labtrust-valid-release-v0
+    path: valid/labtrust-valid-release-v0/benchmark_case.v0.json
+  - case_id: labtrust-trace-hash-tamper-v0
+    path: invalid/trace_hash_tamper/benchmark_case.v0.json
+  - case_id: labtrust-certificate-id-tamper-v0
+    path: invalid/certificate_id_tamper/benchmark_case.v0.json
+  - case_id: labtrust-missing-qc-result-v0
+    path: invalid/missing_qc_result/benchmark_case.v0.json
+  - case_id: labtrust-unauthorized-release-v0
+    path: invalid/unauthorized_release/benchmark_case.v0.json
+  - case_id: labtrust-stale-trace-v0
+    path: invalid/stale_trace_after_certificate/benchmark_case.v0.json
+  - case_id: labtrust-legacy-handoff-v0
+    path: invalid/legacy_handoff_file/benchmark_case.v0.json
+  - case_id: labtrust-placeholder-commit-v0
+    path: invalid/placeholder_commit/benchmark_case.v0.json
+  - case_id: labtrust-lean-kernel-failure-v0
+    path: invalid/lean_trust_kernel_failure/benchmark_case.v0.json
+
+metrics:
+  - release_reproducibility_score
+  - failure_localization_accuracy
+  - certificate_completeness_score
+  - registry_coverage_score
+  - formal_check_coverage_score
+  - scientific_memory_interpretability_score
+  - repair_hint_quality_score
