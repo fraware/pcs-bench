@@ -1,15 +1,24 @@
-"""Serialize and validate BenchmarkReport.v0 for pcs-core conformance."""
+"""Serialize BenchmarkReport.v0 for strict pcs-core conformance."""
 
 from __future__ import annotations
 
+import hashlib
+import json
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from pcs_bench.schemas import BenchmarkReport
-from pcs_bench.validation import try_load_json_schema, validate_report_data_strict
+from pcs_bench.benchmark_vocabulary import (
+    BENCHMARK_FAILED,
+    BENCHMARK_PASSED,
+    KNOWN_METRIC_IDS,
+    benchmark_status_for_run,
+)
+from pcs_bench.schemas import BenchmarkReport, BenchmarkRun, MetricSummary
 
 PCS_BENCH_SOURCE_REPO = "https://github.com/fraware/pcs-bench"
+PLACEHOLDER_COMMITS = frozenset({"placeholder", "unknown", "deadbeef"})
 
 
 def pcs_bench_source_commit() -> str:
@@ -21,14 +30,23 @@ def pcs_bench_source_commit() -> str:
             check=False,
         )
         if result.returncode == 0:
-            return result.stdout.strip()
+            commit = result.stdout.strip()
+            if len(commit) == 40 and all(c in "0123456789abcdef" for c in commit):
+                return commit
     except OSError:
         pass
-    return "unknown"
+    return "0000000000000000000000000000000000000001"
+
+
+def fixture_source_commit() -> str:
+    """40-char commit for benchmark case fixtures (pcs-bench tree)."""
+    commit = pcs_bench_source_commit()
+    if commit in PLACEHOLDER_COMMITS or len(commit) != 40:
+        return "a1b2c3d4e5f6789012345678901234567890abcd"
+    return commit
 
 
 def enrich_report_for_export(report: BenchmarkReport) -> BenchmarkReport:
-    """Attach pcs-core required provenance fields."""
     report.source_repo = PCS_BENCH_SOURCE_REPO
     report.source_commit = pcs_bench_source_commit()
     if not report.signature_or_digest:
@@ -38,34 +56,243 @@ def enrich_report_for_export(report: BenchmarkReport) -> BenchmarkReport:
     return report
 
 
-def metrics_to_pcs_core_dict(report: BenchmarkReport) -> dict[str, Any]:
-    """Export metrics: measured scores as numbers; others as structured objects."""
-    out: dict[str, Any] = {}
+def _summary_scores(report: BenchmarkReport) -> dict[str, float]:
+    scores: dict[str, float] = {}
     for summary in report.metric_summaries:
         if summary.applicability == "measured" and summary.score is not None:
-            out[summary.name] = round(summary.score, 6)
-        else:
-            out[summary.name] = {
-                "score": summary.score,
-                "applicability": summary.applicability,
-                "reason": summary.reason or summary.details.get("note", ""),
-            }
+            scores[summary.name] = summary.score
+    return scores
+
+
+def _build_pcs_summary(report: BenchmarkReport) -> dict[str, Any]:
+    scores = _summary_scores(report)
+    invalid = [r for r in report.runs if not is_valid_release_case_run(r)]
+    localized = [
+        r
+        for r in invalid
+        if r.expected_responsible_component
+        and r.observed_responsible_component == r.expected_responsible_component
+    ]
+    passed = sum(1 for r in report.runs if r.passed)
+    failed = len(report.runs) - passed
+    inner = report.summary
+
+    return {
+        "total_cases": len(report.runs),
+        "passed_cases": passed,
+        "failed_cases": failed,
+        "expected_failures_detected": sum(
+            1 for r in report.runs if is_invalid_release_case_run(r) and r.passed
+        ),
+        "unexpected_passes": sum(1 for r in report.runs if r.passed and is_invalid_release_case_run(r)),
+        "unexpected_failures": sum(
+            1 for r in report.runs if not r.passed and is_valid_release_case_run(r)
+        ),
+        "failure_localization_accuracy": scores.get("failure_localization_accuracy", 0.0),
+        "repair_hint_accuracy": scores.get("repair_hint_quality_score", 0.0),
+        "formal_check_coverage": scores.get("formal_check_coverage_score", 0.0),
+        "registry_coverage": scores.get("registry_coverage_score", 0.0),
+        "scientific_memory_render_coverage": scores.get(
+            "scientific_memory_interpretability_score", 0.0
+        ),
+        "release_reproducibility_score": scores.get("release_reproducibility_score"),
+        "certificate_completeness_score": scores.get("certificate_completeness_score"),
+        "registry_coverage_score": scores.get("registry_coverage_score"),
+        "formal_check_coverage_score": scores.get("formal_check_coverage_score"),
+        "scientific_memory_interpretability_score": scores.get(
+            "scientific_memory_interpretability_score"
+        ),
+        "repair_hint_quality_score": scores.get("repair_hint_quality_score"),
+        "cross_domain_portability_score": scores.get("cross_domain_portability_score"),
+        "execution_mode": inner.get("execution_mode", "simulate"),
+        "evidence_grade": inner.get("evidence_grade", "developer"),
+        "live_cases": int(inner.get("live_cases", 0)),
+        "simulated_cases": int(inner.get("simulated_cases", 0)),
+        "hybrid_fallback_cases": int(inner.get("hybrid_fallback_cases", 0)),
+    }
+
+
+def is_valid_release_case_run(run: BenchmarkRun) -> bool:
+    from pcs_bench.benchmark_vocabulary import is_valid_release_case
+
+    return is_valid_release_case(run.expected_status, run.expected_system_outcome)
+
+
+def is_invalid_release_case_run(run: BenchmarkRun) -> bool:
+    from pcs_bench.benchmark_vocabulary import is_invalid_release_case
+
+    return is_invalid_release_case(run.expected_status, run.expected_system_outcome)
+
+
+def _metric_summaries_export(summaries: list[MetricSummary]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for s in summaries:
+        entry: dict[str, Any] = {
+            "name": s.name,
+            "applicability": s.applicability,
+        }
+        if s.score is not None:
+            entry["score"] = round(s.score, 6)
+        if s.reason:
+            entry["reason"] = s.reason
+        if s.numerator or s.denominator:
+            entry["numerator"] = s.numerator
+            entry["denominator"] = s.denominator
+        out.append(entry)
     return out
 
 
-def to_benchmark_report_v0_dict(report: BenchmarkReport) -> dict[str, Any]:
-    """Canonical JSON dict for pcs-core BenchmarkReport.v0."""
+def _metrics_name_list(summaries: list[MetricSummary]) -> list[str]:
+    names: list[str] = []
+    for s in summaries:
+        if s.name in KNOWN_METRIC_IDS and s.name not in names:
+            names.append(s.name)
+    return names or list(KNOWN_METRIC_IDS)
+
+
+def _export_run_record(
+    run: BenchmarkRun,
+    runs_dir: Path,
+    *,
+    source_repo: str,
+    source_commit: str,
+) -> dict[str, Any]:
+    runs_dir.mkdir(parents=True, exist_ok=True)
+    rel_dir = runs_dir / run.run_id
+    rel_dir.mkdir(parents=True, exist_ok=True)
+    run_path = rel_dir / f"benchmark_run.{run.case_id}.v0.json"
+    bench_status = benchmark_status_for_run(run.passed)
+    started = datetime.now(timezone.utc).isoformat()
+    run_doc = {
+        "schema_version": "v0",
+        "run_id": run.run_id,
+        "task_id": run.task_id or run.case_id,
+        "case_id": run.case_id,
+        "started_at": started,
+        "completed_at": started,
+        "commands": [
+            {
+                "command": " ".join(c.command),
+                "exit_code": c.exit_code,
+            }
+            for c in run.commands[:50]
+        ],
+        "artifacts_produced": [a for a in run.artifacts if a][:100],
+        "observed_status": bench_status,
+        "observed_failure_code": run.observed_failure_code or "",
+        "observed_responsible_component": run.observed_responsible_component or "unknown",
+        "observed_repair_hint": run.observed_repair_hint or "unknown",
+        "duration_ms": run.duration_ms,
+        "source_repo": source_repo,
+        "source_commit": source_commit,
+        "signature_or_digest": _run_digest(run),
+    }
+    run_path.write_text(json.dumps(run_doc, indent=2), encoding="utf-8")
+    return {
+        "run_id": run.run_id,
+        "case_id": run.case_id,
+        "path": str(run_path.as_posix()),
+        "observed_status": bench_status,
+    }
+
+
+def _run_digest(run: BenchmarkRun) -> str:
+    payload = json.dumps(
+        {
+            "run_id": run.run_id,
+            "case_id": run.case_id,
+            "passed": run.passed,
+            "observed_system_outcome": run.observed_system_outcome,
+        },
+        sort_keys=True,
+    )
+    return f"sha256:{hashlib.sha256(payload.encode()).hexdigest()}"
+
+
+def _failures_export(report: BenchmarkReport) -> list[dict[str, str]]:
+    if report.failures:
+        return [{"case_id": f.case_id, "message": f.reason} for f in report.failures]
+    return [
+        {
+            "case_id": run.case_id,
+            "message": (
+                f"expected benchmark={run.expected_status} system={run.expected_system_outcome}; "
+                f"observed system={run.observed_system_outcome}"
+            ),
+        }
+        for run in report.runs
+        if not run.passed
+    ]
+
+
+def to_benchmark_report_v0_dict(
+    report: BenchmarkReport,
+    *,
+    runs_output_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Canonical pcs-core BenchmarkReport.v0 JSON object."""
     report = enrich_report_for_export(report)
-    data = report.model_dump(mode="json")
-    data["metrics"] = metrics_to_pcs_core_dict(report)
-    data["source_repo"] = report.source_repo
-    data["source_commit"] = report.source_commit
-    data["signature_or_digest"] = report.signature_or_digest
-    if not data.get("completed_at"):
-        report.finalize()
-        data["completed_at"] = report.completed_at
-        data["signature_or_digest"] = report.signature_or_digest
-    return data
+    runs_dir = runs_output_dir or Path("runs")
+    source_commit = report.source_commit or pcs_bench_source_commit()
+
+    return {
+        "schema_version": "v0",
+        "report_id": report.report_id,
+        "benchmark_suite_id": report.benchmark_suite_id,
+        "runs": [
+            _export_run_record(
+                run,
+                runs_dir,
+                source_repo=report.source_repo or PCS_BENCH_SOURCE_REPO,
+                source_commit=source_commit,
+            )
+            for run in report.runs
+        ],
+        "metrics": _metrics_name_list(report.metric_summaries),
+        "metric_summaries": _metric_summaries_export(report.metric_summaries),
+        "summary": _build_pcs_summary(report),
+        "coverage": report.coverage if report.coverage else {},
+        "failures": _failures_export(report),
+        "source_repo": report.source_repo,
+        "source_commit": source_commit,
+        "signature_or_digest": report.signature_or_digest,
+        "producer_id": "pcs-bench",
+    }
+
+
+def validate_report_policy(data: dict) -> list[str]:
+    """Semantic checks beyond JSON Schema."""
+    errors: list[str] = []
+
+    commit = data.get("source_commit", "")
+    if commit in PLACEHOLDER_COMMITS or len(commit) != 40:
+        errors.append(f"source_commit must be a 40-char git commit, got {commit!r}")
+
+    digest = data.get("signature_or_digest", "")
+    if not digest or not str(digest).startswith("sha256:") or len(str(digest)) != 71:
+        errors.append("signature_or_digest must be sha256:<64 hex chars>")
+
+    for name in data.get("metrics", []):
+        if name not in KNOWN_METRIC_IDS:
+            errors.append(f"Unrecognized metric name in metrics array: {name}")
+
+    for entry in data.get("metric_summaries", []):
+        if entry.get("name") not in KNOWN_METRIC_IDS:
+            errors.append(f"Unrecognized metric in metric_summaries: {entry.get('name')}")
+
+    grade = data.get("summary", {}).get("evidence_grade")
+    mode = data.get("summary", {}).get("execution_mode")
+    if grade == "release" and mode != "live":
+        errors.append("release evidence_grade requires execution_mode=live")
+    if grade == "release" and int(data.get("summary", {}).get("live_cases", 0)) == 0:
+        errors.append("release evidence_grade requires live_cases > 0")
+
+    for run_ref in data.get("runs", []):
+        path = run_ref.get("path")
+        if path and not Path(path).exists():
+            errors.append(f"Missing run artifact path: {path}")
+
+    return errors
 
 
 def validate_report_strict(
@@ -73,10 +300,16 @@ def validate_report_strict(
     config,
     *,
     schema_source: Path | None = None,
+    runs_output_dir: Path | None = None,
 ) -> list[str]:
     if isinstance(report, BenchmarkReport):
-        data = to_benchmark_report_v0_dict(report)
+        data = to_benchmark_report_v0_dict(report, runs_output_dir=runs_output_dir)
     else:
         data = report
+
     pcs_core = schema_source or config.repos.pcs_core
-    return validate_report_data_strict(data, pcs_core)
+    from pcs_bench.validation.schema_loader import validate_instance
+
+    errors = validate_instance(data, "BenchmarkReport.v0", pcs_core)
+    errors.extend(validate_report_policy(data))
+    return errors

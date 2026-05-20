@@ -23,6 +23,7 @@ dependencies = [
     "rich>=13.0",
     "pyyaml>=6.0",
     "jsonschema>=4.0",
+    "referencing>=0.35",
 ]
 
 [project.optional-dependencies]

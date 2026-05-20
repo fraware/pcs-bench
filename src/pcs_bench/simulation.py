@@ -7,12 +7,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from pcs_bench.benchmark_vocabulary import (
+    SYSTEM_ADMITTED,
+    SYSTEM_REJECTED,
+    system_outcome_from_sidecar,
+)
 from pcs_bench.schemas import BenchmarkCase
 
 
 @dataclass
 class SimulatedOutcome:
     status: str
+    system_outcome: str | None = None
     failure_code: str | None = None
     responsible_component: str | None = None
     repair_hint: str | None = None
@@ -53,7 +59,8 @@ def simulate_outcome(case: BenchmarkCase, suite_dir: Path) -> SimulatedOutcome:
         verification = load_expected_sidecar(case_root, "verification_result.json")
         if verification:
             return SimulatedOutcome(
-                status=verification.get("status") or case.expected_status,
+                status=verification.get("status") or case.expected_system_outcome or "",
+                system_outcome=system_outcome_from_sidecar(verification),
                 failure_code=verification.get("failure_code") or case.expected_failure_code,
                 responsible_component=verification.get("responsible_component")
                 or case.expected_responsible_component,
@@ -66,7 +73,9 @@ def simulate_outcome(case: BenchmarkCase, suite_dir: Path) -> SimulatedOutcome:
             )
 
     return SimulatedOutcome(
-        status=case.expected_status,
+        status=case.expected_system_outcome or SYSTEM_REJECTED,
+        system_outcome=case.expected_system_outcome
+        or (SYSTEM_ADMITTED if case.expected_status == "passed" else SYSTEM_REJECTED),
         failure_code=case.expected_failure_code,
         responsible_component=case.expected_responsible_component,
         repair_hint_kind=case.expected_repair_hint_kind,
@@ -92,7 +101,7 @@ def _stringify_hint(hint: Any) -> str | None:
 
 
 def _default_repair_hint(case: BenchmarkCase) -> str | None:
-    if case.expected_status != "Rejected":
+    if case.expected_status == "passed":
         return None
     kind = case.expected_repair_hint_kind or "unspecified_repair"
     component = case.expected_responsible_component or "unknown"

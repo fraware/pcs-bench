@@ -17,8 +17,10 @@ def _analysis_for_run(run: BenchmarkRun) -> dict[str, Any]:
 def compute_coverage(report: BenchmarkReport) -> dict[str, Any]:
     """Build coverage block aligned with pcs-core CoverageReport concepts."""
     runs = report.runs
-    invalid = [r for r in runs if r.expected_status == "Rejected"]
-    valid = [r for r in runs if r.expected_status in ("Admitted", "Accepted")]
+    from pcs_bench.benchmark_vocabulary import is_invalid_release_case, is_valid_release_case
+
+    invalid = [r for r in runs if is_invalid_release_case(r.expected_status, r.expected_system_outcome)]
+    valid = [r for r in runs if is_valid_release_case(r.expected_status, r.expected_system_outcome)]
 
     registry_ratios = []
     cert_scores = []
@@ -42,7 +44,9 @@ def compute_coverage(report: BenchmarkReport) -> dict[str, Any]:
         render = analysis.get("rendered_section_coverage")
         if render is not None:
             render_scores.append(float(render))
-            if float(render) < 1.0 and run.expected_status in ("Admitted", "Accepted"):
+            if float(render) < 1.0 and is_valid_release_case(
+                run.expected_status, run.expected_system_outcome
+            ):
                 missing_sections.append(run.case_id)
 
     localized = sum(

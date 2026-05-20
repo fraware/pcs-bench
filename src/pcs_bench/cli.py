@@ -187,6 +187,12 @@ def run_cmd(
         cfg.benchmarks_root, suite_names
     )
 
+    if ci and live_required_suites and simulate and not dry_run:
+        console.print(
+            "[red]CI with live_required suites requires --live (not --simulate)[/red]"
+        )
+        raise typer.Exit(1)
+
     for suite_name in suite_names:
         suite_dir = cfg.benchmarks_root / suite_name
         if not suite_dir.exists():
@@ -248,6 +254,16 @@ def run_cmd(
     apply_metrics_to_report(final_report, summaries)
     apply_coverage_to_report(final_report)
 
+    is_live = not dry_run and not simulate and not hybrid
+    final_report.summary["execution_mode"] = (
+        "live" if is_live else ("hybrid" if hybrid else ("dry_run" if dry_run else "simulate"))
+    )
+    final_report.summary["evidence_grade"] = "release" if (ci and is_live) else "developer"
+    if is_live:
+        final_report.dry_run = False
+    elif simulate or hybrid or dry_run:
+        final_report.dry_run = True
+
     save_report(final_report, out)
     console.print(f"\n[green]Report written to[/green] {out}")
 
@@ -271,7 +287,11 @@ def run_cmd(
         violations = check_ci_thresholds(
             final_report, cfg, required_metrics=required_metrics
         )
-        live_errors = check_live_required(final_report, live_required_suites)
+        live_errors = check_live_required(
+            final_report,
+            live_required_suites,
+            release_grade=final_report.summary.get("evidence_grade") == "release",
+        )
         if live_errors:
             for msg in live_errors:
                 console.print(f"[red]{msg}[/red]")
@@ -368,15 +388,21 @@ def validate_report_cmd(
         "--schema-source",
         help="Path to pcs-core repo for BenchmarkReport.v0 schema.",
     ),
+    pcs_core: Optional[Path] = typer.Option(
+        None,
+        "--pcs-core",
+        help="Alias for --schema-source (pcs-core checkout path).",
+    ),
     config: Optional[Path] = typer.Option(None, "--config"),
 ) -> None:
     """Validate a report against pcs-core BenchmarkReport.v0."""
+    schema_root = pcs_core or schema_source
     cfg = _load_config(config).apply_cli_overrides(
-        pcs_core=schema_source,
+        pcs_core=schema_root,
     )
     from pcs_bench.validation import validate_report_json
 
-    errors = validate_report_json(input, cfg, schema_source=schema_source)
+    errors = validate_report_json(input, cfg, schema_source=schema_root)
     if errors:
         console.print("[red]Report validation failed:[/red]")
         for err in errors:
@@ -415,6 +441,7 @@ def gate_cmd(
     """Run full release gate: fixtures, manifest, cases, benchmark, report validation, packet."""
     import subprocess
 
+    cfg = _load_config(config)
     root = Path.cwd()
     py = sys.executable
 
@@ -430,9 +457,14 @@ def gate_cmd(
     else:
         run_args.append("--live")
     steps.append((run_args, "benchmark run"))
+    validate_report_cmd = [py, "-m", "pcs_bench", "validate-report", "--input", str(out)]
+    pcs_core_path = cfg.repos.pcs_core
+    if pcs_core_path and pcs_core_path.is_dir():
+        validate_report_cmd.extend(["--pcs-core", str(pcs_core_path)])
+
     steps.extend(
         [
-            ([py, "-m", "pcs_bench", "validate-report", "--input", str(out)], "validate report"),
+            (validate_report_cmd, "validate report"),
             (
                 [py, "-m", "pcs_bench", "packet", "--report", str(out), "--out", str(packet_dir)],
                 "export packet",

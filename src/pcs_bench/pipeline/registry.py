@@ -6,6 +6,8 @@ import json
 import shutil
 from pathlib import Path
 
+from pcs_bench.benchmark_vocabulary import BENCHMARK_FAILED, BENCHMARK_PASSED
+
 from pcs_bench.artifacts import discover_release_layout
 from pcs_bench.cases import case_input_dir
 from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
@@ -85,22 +87,31 @@ def get_pipeline_for_workflow(workflow_id: str) -> list[StageFn]:
 
 def _case_passed(
     case: BenchmarkCase,
-    observed_status: str,
+    observed_system_outcome: str,
     observed_failure_code: str | None,
     observed_component: str | None,
 ) -> bool:
-    status_ok = observed_status == case.expected_status
-    if case.expected_status in ("Admitted", "Accepted"):
-        return status_ok
-    code_ok = (
-        case.expected_failure_code is None
-        or observed_failure_code == case.expected_failure_code
+    from pcs_bench.benchmark_vocabulary import (
+        BENCHMARK_FAILED,
+        BENCHMARK_PASSED,
+        is_invalid_release_case,
+        is_valid_release_case,
     )
-    component_ok = (
-        case.expected_responsible_component is None
-        or observed_component == case.expected_responsible_component
-    )
-    return status_ok and code_ok and component_ok
+
+    if is_valid_release_case(case.expected_status, case.expected_system_outcome):
+        system_ok = observed_system_outcome == (case.expected_system_outcome or "admitted")
+        return system_ok
+    if is_invalid_release_case(case.expected_status, case.expected_system_outcome):
+        code_ok = (
+            not case.expected_failure_code
+            or observed_failure_code == case.expected_failure_code
+        )
+        component_ok = (
+            not case.expected_responsible_component
+            or observed_component == case.expected_responsible_component
+        )
+        return code_ok and component_ok
+    return observed_system_outcome == case.expected_system_outcome
 
 
 def stage_case_inputs(case_ws: CaseWorkspace, suite_dir: Path, case: BenchmarkCase) -> None:
@@ -159,9 +170,10 @@ def run_case_pipeline(
         stage_infer_from_commands(ctx)
         stage_finalize_analysis(ctx)
 
+    system_outcome = ctx.observed.system_outcome or ctx.observed.status
     passed = _case_passed(
         case,
-        ctx.observed.status,
+        system_outcome,
         ctx.observed.failure_code,
         ctx.observed.responsible_component,
     )
@@ -215,8 +227,10 @@ def run_case_pipeline(
         suite_id=suite.suite_id,
         workflow_id=case.workflow_id,
         task_id=case.task_id,
-        observed_status=ctx.observed.status,
+        observed_status=BENCHMARK_PASSED if passed else BENCHMARK_FAILED,
+        observed_system_outcome=system_outcome,
         expected_status=case.expected_status,
+        expected_system_outcome=case.expected_system_outcome,
         observed_failure_code=ctx.observed.failure_code,
         expected_failure_code=case.expected_failure_code,
         observed_responsible_component=component,

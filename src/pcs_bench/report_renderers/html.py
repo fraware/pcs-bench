@@ -75,7 +75,7 @@ def render_html(
 
     localization_rows = ""
     for r in report.runs:
-        if r.expected_status != "Rejected":
+        if r.expected_status != "failed":
             continue
         match = r.observed_responsible_component == r.expected_responsible_component
         localization_rows += f"""

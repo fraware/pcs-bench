@@ -1,15 +1,18 @@
 {
   "schema_version": "v0",
   "case_id": "labtrust-stale-trace-v0",
-  "task_id": "labtrust-qc-release-failure-localization-v0",
+  "task_id": "labtrust-stale-trace-v0-task",
   "workflow_id": "hospital_lab.qc_release",
-  "case_kind": "stale_trace_after_certificate",
-  "input_artifacts": { "release_dir": "input_artifacts/" },
-  "expected_status": "Rejected",
+  "case_kind": "stale_release",
+  "input_artifacts": {
+    "release_directory": "input_artifacts/"
+  },
+  "expected_status": "failed",
+  "expected_system_outcome": "stale",
   "expected_failure_code": "stale_trace_after_certificate",
   "expected_responsible_component": "runtime_producer",
-  "expected_repair_hint_kind": "regenerate_trace_or_certificate",
-  "source_repo": "https://github.com/fraware/LabTrust-Gym",
-  "source_commit": "placeholder",
-  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000012"
+  "expected_repair_hint_kind": "align_hash",
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "f5d2bf7353fe82aaec70335a6e8ce93fe2beb9c9",
+  "signature_or_digest": "sha256:fe6c5c086088c31ab64fb599bcad82431682ea5b4bfaed44d136ab4e98f499fc"
 }

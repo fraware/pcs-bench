@@ -3,15 +3,16 @@
   "case_id": "computation-valid-v0",
   "task_id": "computation-valid-v0-task",
   "workflow_id": "scientific_computation.reproducibility_v0",
-  "case_kind": "valid_computation",
+  "case_kind": "valid_release",
   "input_artifacts": {
-    "release_dir": "input_artifacts/"
+    "release_directory": "input_artifacts/"
   },
-  "expected_status": "Admitted",
-  "expected_failure_code": null,
-  "expected_responsible_component": null,
-  "expected_repair_hint_kind": null,
+  "expected_status": "passed",
+  "expected_system_outcome": "admitted",
+  "expected_failure_code": "",
+  "expected_responsible_component": "unknown",
+  "expected_repair_hint_kind": "none",
   "source_repo": "https://github.com/fraware/pcs-bench",
-  "source_commit": "placeholder",
-  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+  "source_commit": "f5d2bf7353fe82aaec70335a6e8ce93fe2beb9c9",
+  "signature_or_digest": "sha256:b8487214e46ddab049cab9ea8183a5d4db131af65b7422a8225b316c1694071d"
 }

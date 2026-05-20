@@ -9,7 +9,7 @@ Suites with `live_required_for_release: true` (LabTrust QC release) require at l
 ```bash
 pcs-bench check-adapters --pcs-core ../pcs-core --labtrust ../LabTrust-Gym
 pcs-bench run --suite labtrust-qc-release --live --ci --out reports/live-labtrust.json
-pcs-bench validate-report --input reports/live-labtrust.json --schema-source ../pcs-core
+pcs-bench validate-report --input reports/live-labtrust.json --pcs-core ../pcs-core
 ```
 
 CI fails when:
@@ -44,3 +44,5 @@ For private monorepos, use a self-hosted runner with sibling repos at fixed path
 ## Hybrid fallback
 
 `--hybrid` tries live CLIs first; if all commands exit 127 (CLI missing), it falls back to fixture sidecars. Hybrid fallback cases are counted separately in the report (`hybrid_fallback_cases`). They do **not** satisfy the live release gate.
+
+Reports also carry `evidence_grade`: `release` only when `--ci` and `--live` are combined; simulate/hybrid runs are labeled `developer` evidence. See [Benchmark vocabulary](benchmark-vocabulary.md).

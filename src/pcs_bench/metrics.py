@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from pcs_bench.benchmark_vocabulary import is_invalid_release_case, is_valid_release_case
 from pcs_bench.metrics_applicability import insufficient, measured, not_applicable
 from pcs_bench.metrics_definitions import (
     CERTIFICATE_REQUIRED_FIELDS,
@@ -73,13 +74,13 @@ def _is_memory_run(run: BenchmarkRun) -> bool:
 
 
 def compute_release_reproducibility_score(runs: list[BenchmarkRun]) -> MetricSummary:
-    valid = [r for r in runs if r.expected_status in ("Admitted", "Accepted")]
+    valid = [r for r in runs if is_valid_release_case(r.expected_status, r.expected_system_outcome)]
     if not valid:
         return insufficient(
             "release_reproducibility_score",
             "No valid release cases were present in this run.",
         )
-    reproducible = [r for r in valid if r.passed and r.observed_status in ("Admitted", "Accepted")]
+    reproducible = [r for r in valid if r.passed]
     score = _safe_ratio(len(reproducible), len(valid))
     return measured(
         "release_reproducibility_score",
@@ -91,7 +92,7 @@ def compute_release_reproducibility_score(runs: list[BenchmarkRun]) -> MetricSum
 
 
 def compute_failure_localization_accuracy(runs: list[BenchmarkRun]) -> MetricSummary:
-    invalid = [r for r in runs if r.expected_status == "Rejected"]
+    invalid = [r for r in runs if is_invalid_release_case(r.expected_status, r.expected_system_outcome)]
     if not invalid:
         return insufficient(
             "failure_localization_accuracy",
@@ -114,7 +115,7 @@ def compute_failure_localization_accuracy(runs: list[BenchmarkRun]) -> MetricSum
 
 
 def compute_certificate_completeness_score(runs: list[BenchmarkRun]) -> MetricSummary:
-    candidates = [r for r in runs if r.expected_status in ("Admitted", "Accepted")]
+    candidates = [r for r in runs if is_valid_release_case(r.expected_status, r.expected_system_outcome)]
     if not candidates:
         return insufficient(
             "certificate_completeness_score",
@@ -151,7 +152,7 @@ def compute_registry_coverage_score(runs: list[BenchmarkRun]) -> MetricSummary:
             numerator=int(sum(ratios) * 100),
             denominator=len(ratios) * 100,
         )
-    valid = [r for r in runs if r.expected_status in ("Admitted", "Accepted")]
+    valid = [r for r in runs if is_valid_release_case(r.expected_status, r.expected_system_outcome)]
     if not valid:
         return insufficient(
             "registry_coverage_score",
@@ -191,7 +192,7 @@ def compute_scientific_memory_interpretability_score(runs: list[BenchmarkRun]) -
         )
     coverages: list[float] = []
     for run in memory_runs:
-        if run.expected_status not in ("Admitted", "Accepted"):
+        if not is_valid_release_case(run.expected_status, run.expected_system_outcome):
             continue
         analysis = _load_run_analysis(run)
         if "rendered_section_coverage" in analysis:
@@ -224,7 +225,12 @@ def compute_scientific_memory_interpretability_score(runs: list[BenchmarkRun]) -
 
 
 def compute_repair_hint_quality_score(runs: list[BenchmarkRun]) -> MetricSummary:
-    need_hint = [r for r in runs if r.expected_status == "Rejected" and r.expected_failure_code]
+    need_hint = [
+        r
+        for r in runs
+        if is_invalid_release_case(r.expected_status, r.expected_system_outcome)
+        and r.expected_failure_code
+    ]
     if not need_hint:
         return insufficient(
             "repair_hint_quality_score",
@@ -385,11 +391,11 @@ def compute_all_metrics(
 
 def apply_metrics_to_report(report, summaries: list[MetricSummary]) -> None:
     report.metric_summaries = summaries
-    report.metrics = {
-        s.name: s.score
+    report.metrics = [
+        s.name
         for s in summaries
         if s.applicability == "measured" and s.score is not None
-    }
+    ]
     report.summary = {
         **report.summary,
         "total_runs": len(report.runs),

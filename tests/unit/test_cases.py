@@ -32,7 +32,8 @@ def test_load_case_fields():
     suite = load_suite(LABTRUST_SUITE)
     _, path, case = load_suite_cases(LABTRUST_SUITE, suite)[1]
     assert case.case_id == "labtrust-trace-hash-tamper-v0"
-    assert case.expected_status == "Rejected"
+    assert case.expected_status == "failed"
+    assert case.expected_system_outcome == "rejected"
     assert case.expected_failure_code == "trace_hash_mismatch"
 
 

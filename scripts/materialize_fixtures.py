@@ -85,13 +85,17 @@ SECTIONS_FULL = [
 
 
 def main() -> None:
+    import sys
+
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from case_fixture_writer import write_from_verification, write_valid_case
+
     labtrust = ROOT / "benchmarks" / "labtrust_qc_release"
     cases = [
-        ("valid/labtrust-valid-release-v0", "labtrust-valid-release-v0", "Admitted", None),
+        ("valid/labtrust-valid-release-v0", "labtrust-valid-release-v0", None),
         (
             "invalid/trace_hash_tamper",
             "labtrust-trace-hash-tamper-v0",
-            "Rejected",
             {
                 "status": "Rejected",
                 "failure_code": "trace_hash_mismatch",
@@ -109,7 +113,6 @@ def main() -> None:
         (
             "invalid/certificate_id_tamper",
             "labtrust-certificate-id-tamper-v0",
-            "Rejected",
             {
                 "status": "Rejected",
                 "failure_code": "certificate_id_mismatch",
@@ -120,7 +123,6 @@ def main() -> None:
         (
             "invalid/legacy_handoff_file",
             "labtrust-legacy-handoff-v0",
-            "Rejected",
             {
                 "status": "Rejected",
                 "failure_code": "handoff_schema_mismatch",
@@ -131,7 +133,6 @@ def main() -> None:
         (
             "invalid/placeholder_commit",
             "labtrust-placeholder-commit-v0",
-            "Rejected",
             {
                 "status": "Rejected",
                 "failure_code": "placeholder_commit_detected",
@@ -142,7 +143,6 @@ def main() -> None:
         (
             "invalid/missing_qc_result",
             "labtrust-missing-qc-result-v0",
-            "Rejected",
             {
                 "status": "Rejected",
                 "failure_code": "missing_qc_result",
@@ -153,7 +153,6 @@ def main() -> None:
         (
             "invalid/unauthorized_release",
             "labtrust-unauthorized-release-v0",
-            "Rejected",
             {
                 "status": "Rejected",
                 "failure_code": "unauthorized_release",
@@ -164,7 +163,6 @@ def main() -> None:
         (
             "invalid/stale_trace_after_certificate",
             "labtrust-stale-trace-v0",
-            "Rejected",
             {
                 "status": "Rejected",
                 "failure_code": "stale_trace_after_certificate",
@@ -175,7 +173,6 @@ def main() -> None:
         (
             "invalid/lean_trust_kernel_failure",
             "labtrust-lean-kernel-failure-v0",
-            "Rejected",
             {
                 "status": "Rejected",
                 "failure_code": "lean_theorem_failed",
@@ -184,14 +181,32 @@ def main() -> None:
             },
         ),
     ]
-    for rel, rid, status, verification in cases:
+    for rel, rid, verification in cases:
         case_dir = labtrust / rel
+        task_id = f"{rid}-task"
+        if verification:
+            kind = rel.split("/")[-1].replace("_", "-")
+            write_from_verification(
+                case_dir,
+                case_id=rid,
+                task_id=task_id,
+                workflow_id="hospital_lab.qc_release",
+                case_kind=rel.split("/")[-1],
+                verification=verification,
+            )
+        else:
+            write_valid_case(
+                case_dir,
+                case_id=rid,
+                task_id=task_id,
+                workflow_id="hospital_lab.qc_release",
+            )
         write_bundle(
             case_dir / "input_artifacts",
             release_id=rid,
             workflow_id="hospital_lab.qc_release",
-            status=status,
-            cert_status="Valid" if status == "Admitted" else "Rejected",
+            status="Admitted" if not verification else "Rejected",
+            cert_status="Valid" if not verification else "Rejected",
         )
         if "lean" in rel:
             art = case_dir / "input_artifacts"

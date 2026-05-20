@@ -51,7 +51,10 @@ pcs-bench explain --report reports/latest.json --case labtrust-trace-hash-tamper
 pcs-bench list-suites
 
 # Strict BenchmarkReport.v0 validation (pcs-core schema)
-pcs-bench validate-report --input reports/ci.json --schema-source ../pcs-core
+pcs-bench validate-report --input reports/ci.json --pcs-core ../pcs-core
+
+# Release-grade evidence (live adapters required for live_required suites)
+pcs-bench run --suite all --live --ci --out reports/release.json
 
 # Export reviewer packet and verify structure
 pcs-bench packet --report reports/ci.json --out packets/latest
@@ -99,6 +102,7 @@ PCS schemas, release manifests, certificates, runtime workflows, PF admission lo
 - [Architecture](docs/architecture.md)
 - [Benchmark methodology](docs/benchmark-methodology.md)
 - [Metrics](docs/metrics.md)
+- [Benchmark vocabulary](docs/benchmark-vocabulary.md)
 - [Adding a benchmark suite](docs/adding-a-benchmark-suite.md)
 - [Interpreting results](docs/interpreting-results.md)
 - [CI mode](docs/ci-mode.md)

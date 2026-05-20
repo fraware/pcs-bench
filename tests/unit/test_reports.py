@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pcs_bench.baselines import compare_reports
 from pcs_bench.reports import load_report, save_report
-from pcs_bench.schemas import BenchmarkReport, BenchmarkRun, RepoCommits
+from pcs_bench.schemas import BenchmarkReport, BenchmarkRun, MetricSummary, RepoCommits
 
 
 def test_save_and_load_report(tmp_path):
@@ -16,12 +16,15 @@ def test_save_and_load_report(tmp_path):
                 run_id="r1",
                 case_id="c1",
                 suite_id="s1",
-                expected_status="Admitted",
-                observed_status="Admitted",
+                expected_status="passed",
+                expected_system_outcome="admitted",
+                observed_status="passed",
+                observed_system_outcome="admitted",
                 passed=True,
             )
         ],
-        metrics={"release_reproducibility_score": 1.0},
+        metrics=["release_reproducibility_score"],
+        metric_summaries=[],
     )
     path = tmp_path / "report.json"
     save_report(report, path)
@@ -31,8 +34,16 @@ def test_save_and_load_report(tmp_path):
 
 
 def test_compare_detects_regression():
-    old = BenchmarkReport(metrics={"failure_localization_accuracy": 0.94})
-    new = BenchmarkReport(metrics={"failure_localization_accuracy": 0.88})
+    old = BenchmarkReport(
+        metric_summaries=[
+            MetricSummary(name="failure_localization_accuracy", score=0.94, applicability="measured")
+        ]
+    )
+    new = BenchmarkReport(
+        metric_summaries=[
+            MetricSummary(name="failure_localization_accuracy", score=0.88, applicability="measured")
+        ]
+    )
     cmp = compare_reports(old, new)
     regressions = cmp.regressions()
     assert len(regressions) == 1

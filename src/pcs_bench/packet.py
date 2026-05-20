@@ -148,13 +148,15 @@ def verify_benchmark_packet(packet_dir: Path, config: BenchConfig | None = None)
     manifest_path = packet_dir / "case_manifest.json"
     if manifest_path.exists():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        valid_cases = [c for c in manifest if c.get("expected_status") in ("Admitted", "Accepted")]
-        invalid_cases = [c for c in manifest if c.get("expected_status") == "Rejected"]
+        from pcs_bench.benchmark_vocabulary import BENCHMARK_FAILED, BENCHMARK_PASSED
+
+        valid_cases = [c for c in manifest if c.get("expected_status") == BENCHMARK_PASSED]
+        invalid_cases = [c for c in manifest if c.get("expected_status") == BENCHMARK_FAILED]
         if not valid_cases:
-            result.errors.append("Packet must include at least one valid (Admitted/Accepted) case fixture")
+            result.errors.append("Packet must include at least one valid (passed) case fixture")
             result.valid = False
         if not invalid_cases:
-            result.errors.append("Packet must include at least one invalid (Rejected) case fixture")
+            result.errors.append("Packet must include at least one invalid (failed) case fixture")
             result.valid = False
         for entry in manifest:
             rel = entry.get("fixture_path")

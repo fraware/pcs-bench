@@ -17,6 +17,7 @@ class BenchmarkCase(BaseModel):
     case_kind: str
     input_artifacts: dict[str, str] = Field(default_factory=dict)
     expected_status: str
+    expected_system_outcome: str | None = None
     expected_failure_code: str | None = None
     expected_responsible_component: str | None = None
     expected_repair_hint_kind: str | None = None
@@ -63,7 +64,9 @@ class BenchmarkRun(BaseModel):
     workflow_id: str | None = None
     task_id: str | None = None
     observed_status: str
+    observed_system_outcome: str | None = None
     expected_status: str
+    expected_system_outcome: str | None = None
     observed_failure_code: str | None = None
     expected_failure_code: str | None = None
     observed_responsible_component: str | None = None
@@ -124,7 +127,7 @@ class BenchmarkReport(BaseModel):
     source_commit: str | None = None
     repo_commits: RepoCommits = Field(default_factory=RepoCommits)
     runs: list[BenchmarkRun] = Field(default_factory=list)
-    metrics: dict[str, Any] = Field(default_factory=dict)
+    metrics: list[str] = Field(default_factory=list)
     metric_summaries: list[MetricSummary] = Field(default_factory=list)
     summary: dict[str, Any] = Field(default_factory=dict)
     coverage: dict[str, Any] = Field(default_factory=dict)

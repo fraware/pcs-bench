@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pcs.dev/schemas/BenchmarkCase.v0.json",
+  "$id": "https://pcs.sentinelops.ci/schemas/BenchmarkCase.v0.schema.json",
   "title": "BenchmarkCase.v0",
   "type": "object",
   "required": [
@@ -9,25 +9,58 @@
     "task_id",
     "workflow_id",
     "case_kind",
-    "expected_status"
+    "input_artifacts",
+    "expected_status",
+    "expected_system_outcome",
+    "expected_failure_code",
+    "expected_responsible_component",
+    "expected_repair_hint_kind",
+    "source_repo",
+    "source_commit",
+    "signature_or_digest"
   ],
+  "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "v0" },
+    "schema_version": { "$ref": "common.defs.json#/$defs/schema_version" },
     "case_id": { "type": "string", "minLength": 1 },
     "task_id": { "type": "string", "minLength": 1 },
     "workflow_id": { "type": "string", "minLength": 1 },
-    "case_kind": { "type": "string", "minLength": 1 },
+    "case_kind": { "$ref": "common.defs.json#/$defs/benchmark_case_kind" },
+    "input_artifacts": { "$ref": "#/$defs/input_artifacts" },
+    "expected_status": { "$ref": "common.defs.json#/$defs/benchmark_observed_status" },
+    "expected_system_outcome": {
+      "$ref": "common.defs.json#/$defs/benchmark_system_outcome"
+    },
+    "expected_failure_code": {
+      "type": ["string", "null"]
+    },
+    "expected_responsible_component": {
+      "$ref": "common.defs.json#/$defs/nullable_benchmark_responsible_component"
+    },
+    "expected_repair_hint_kind": {
+      "$ref": "common.defs.json#/$defs/nullable_benchmark_repair_hint_kind"
+    },
+    "source_repo": { "type": "string", "format": "uri" },
+    "source_commit": { "$ref": "common.defs.json#/$defs/git_commit" },
+    "signature_or_digest": { "$ref": "common.defs.json#/$defs/hex_digest" }
+  },
+  "$defs": {
     "input_artifacts": {
       "type": "object",
-      "additionalProperties": { "type": "string" }
-    },
-    "expected_status": { "enum": ["Admitted", "Accepted", "Rejected"] },
-    "expected_failure_code": { "type": ["string", "null"] },
-    "expected_responsible_component": { "type": ["string", "null"] },
-    "expected_repair_hint_kind": { "type": ["string", "null"] },
-    "source_repo": { "type": ["string", "null"] },
-    "source_commit": { "type": ["string", "null"] },
-    "signature_or_digest": { "type": ["string", "null"] }
-  },
-  "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "release_directory": { "type": "string", "minLength": 1 },
+        "case_manifest_path": { "type": "string", "minLength": 1 },
+        "artifacts": {
+          "type": "array",
+          "items": { "$ref": "common.defs.json#/$defs/benchmark_input_artifact_ref" }
+        },
+        "conformance_suite": { "type": "string", "minLength": 1 }
+      },
+      "anyOf": [
+        { "required": ["release_directory"] },
+        { "required": ["case_manifest_path"] }
+      ]
+    }
+  }
 }

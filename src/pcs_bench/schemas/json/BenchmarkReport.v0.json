@@ -1,15 +1,15 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pcs.dev/schemas/BenchmarkReport.v0.json",
+  "$id": "https://pcs.sentinelops.ci/schemas/BenchmarkReport.v0.schema.json",
   "title": "BenchmarkReport.v0",
   "type": "object",
   "required": [
     "schema_version",
     "report_id",
     "benchmark_suite_id",
-    "started_at",
     "runs",
     "metrics",
+    "metric_summaries",
     "summary",
     "coverage",
     "failures",
@@ -17,42 +17,155 @@
     "source_commit",
     "signature_or_digest"
   ],
+  "additionalProperties": false,
   "properties": {
-    "schema_version": { "const": "v0" },
+    "schema_version": { "$ref": "common.defs.json#/$defs/schema_version" },
     "report_id": { "type": "string", "minLength": 1 },
     "benchmark_suite_id": { "type": "string", "minLength": 1 },
-    "started_at": { "type": "string" },
-    "completed_at": { "type": ["string", "null"] },
-    "source_repo": { "type": "string", "minLength": 1 },
-    "source_commit": { "type": "string", "minLength": 1 },
-    "signature_or_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
-    "runs": { "type": "array" },
+    "runs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/run_ref" }
+    },
     "metrics": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "common.defs.json#/$defs/benchmark_metric_id" }
+    },
+    "metric_summaries": {
+      "type": "array",
+      "items": { "$ref": "MetricSummary.v0.schema.json" }
+    },
+    "summary": { "$ref": "#/$defs/benchmark_summary" },
+    "coverage": { "$ref": "#/$defs/benchmark_coverage_block" },
+    "failures": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/benchmark_failure_entry" }
+    },
+    "conformance_refs": {
+      "type": "array",
+      "items": { "$ref": "common.defs.json#/$defs/conformance_run_ref" }
+    },
+    "producer_id": { "$ref": "common.defs.json#/$defs/benchmark_producer_id" },
+    "source_repo": { "type": "string", "format": "uri" },
+    "source_commit": { "$ref": "common.defs.json#/$defs/git_commit" },
+    "signature_or_digest": { "$ref": "common.defs.json#/$defs/hex_digest" }
+  },
+  "$defs": {
+    "run_ref": {
       "type": "object",
-      "additionalProperties": {
-        "oneOf": [
-          { "type": "number", "minimum": 0, "maximum": 1 },
-          {
-            "type": "object",
-            "required": ["score", "applicability"],
-            "properties": {
-              "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-              "applicability": {
-                "type": "string",
-                "enum": ["measured", "not_applicable", "insufficient_cases", "skipped", "failed_to_measure"]
-              },
-              "reason": { "type": "string" }
-            }
-          }
-        ]
+      "required": ["run_id", "case_id", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "run_id": { "type": "string", "minLength": 1 },
+        "case_id": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "observed_status": {
+          "$ref": "common.defs.json#/$defs/benchmark_observed_status"
+        }
       }
     },
-    "metric_summaries": { "type": "array" },
-    "summary": { "type": "object" },
-    "coverage": { "type": "object" },
-    "failures": { "type": "array" },
-    "repo_commits": { "type": "object" },
-    "dry_run": { "type": "boolean" }
-  },
-  "additionalProperties": true
+    "benchmark_summary": {
+      "type": "object",
+      "required": [
+        "total_cases",
+        "passed_cases",
+        "failed_cases",
+        "expected_failures_detected",
+        "unexpected_passes",
+        "unexpected_failures",
+        "failure_localization_accuracy",
+        "repair_hint_accuracy",
+        "formal_check_coverage",
+        "registry_coverage",
+        "scientific_memory_render_coverage"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "total_cases": { "type": "integer", "minimum": 0 },
+        "passed_cases": { "type": "integer", "minimum": 0 },
+        "failed_cases": { "type": "integer", "minimum": 0 },
+        "expected_failures_detected": { "type": "integer", "minimum": 0 },
+        "unexpected_passes": { "type": "integer", "minimum": 0 },
+        "unexpected_failures": { "type": "integer", "minimum": 0 },
+        "failure_localization_accuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "repair_hint_accuracy": { "type": "number", "minimum": 0, "maximum": 1 },
+        "formal_check_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+        "registry_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+        "scientific_memory_render_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "repair_hint_quality_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "cross_domain_portability_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "release_reproducibility_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "certificate_completeness_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "registry_coverage_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "formal_check_coverage_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "scientific_memory_interpretability_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "execution_mode": {
+          "type": "string",
+          "enum": ["live", "simulate", "hybrid", "dry_run"]
+        },
+        "evidence_grade": {
+          "type": "string",
+          "enum": ["release", "developer"]
+        },
+        "live_cases": { "type": "integer", "minimum": 0 },
+        "simulated_cases": { "type": "integer", "minimum": 0 },
+        "hybrid_fallback_cases": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "benchmark_coverage_block": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "registry": { "$ref": "CoverageReport.v0.schema.json" },
+        "formal_checks": { "$ref": "CoverageReport.v0.schema.json" },
+        "scientific_memory": { "$ref": "CoverageReport.v0.schema.json" },
+        "release_reproducibility": { "$ref": "CoverageReport.v0.schema.json" },
+        "certificate_completeness": { "$ref": "CoverageReport.v0.schema.json" },
+        "explain_quality": { "$ref": "ExplainQualityReport.v0.schema.json" },
+        "profile_coverage": { "$ref": "ProfileCoverageReport.v0.schema.json" }
+      }
+    },
+    "benchmark_failure_entry": {
+      "type": "object",
+      "required": ["case_id", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "case_id": { "type": "string", "minLength": 1 },
+        "run_id": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
 }

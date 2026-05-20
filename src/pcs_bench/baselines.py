@@ -41,10 +41,24 @@ class ComparisonReport:
 def compare_reports(old: BenchmarkReport, new: BenchmarkReport) -> ComparisonReport:
     result = ComparisonReport()
 
-    all_metrics = set(old.metrics.keys()) | set(new.metrics.keys())
+    def _scores(report: BenchmarkReport) -> dict[str, float]:
+        out: dict[str, float] = {}
+        for summary in report.metric_summaries:
+            if summary.score is not None:
+                out[summary.name] = summary.score
+        if isinstance(report.metrics, dict):
+            out.update({k: float(v) for k, v in report.metrics.items() if isinstance(v, (int, float))})
+        elif isinstance(report.metrics, list):
+            for name in report.metrics:
+                out.setdefault(name, 0.0)
+        return out
+
+    old_scores = _scores(old)
+    new_scores = _scores(new)
+    all_metrics = set(old_scores.keys()) | set(new_scores.keys())
     for name in sorted(all_metrics):
-        old_score = old.metrics.get(name, 0.0)
-        new_score = new.metrics.get(name, 0.0)
+        old_score = old_scores.get(name, 0.0)
+        new_score = new_scores.get(name, 0.0)
         if new_score > old_score + 1e-9:
             direction = "improved"
         elif new_score < old_score - 1e-9:

@@ -93,7 +93,7 @@ def render_markdown(report: BenchmarkReport, comparison_text: str = "") -> str:
     lines.append("| Case | Expected component | Observed component | Match |")
     lines.append("|------|-------------------|-------------------|-------|")
     for r in report.runs:
-        if r.expected_status != "Rejected":
+        if r.expected_status != "failed":
             continue
         match = r.observed_responsible_component == r.expected_responsible_component
         lines.append(

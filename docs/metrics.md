@@ -12,17 +12,33 @@ pcs-bench computes eight core metrics aligned with pcs-core benchmark schemas. E
 | `skipped` | Explicitly skipped (reserved) |
 | `failed_to_measure` | Suite **requires** the metric but no cases could measure it (CI fails) |
 
-Exported `BenchmarkReport.v0` JSON uses numeric scores only for `measured` metrics. Other states appear as structured objects:
+Exported `BenchmarkReport.v0` JSON lists metric names and structured summaries:
 
 ```json
 {
-  "formal_check_coverage_score": {
-    "score": null,
-    "applicability": "insufficient_cases",
-    "reason": "No formal-check cases were present in this suite."
-  }
+  "metrics": [
+    "release_reproducibility_score",
+    "formal_check_coverage_score"
+  ],
+  "metric_summaries": [
+    {
+      "name": "release_reproducibility_score",
+      "score": 0.95,
+      "applicability": "measured",
+      "numerator": 19,
+      "denominator": 20
+    },
+    {
+      "name": "formal_check_coverage_score",
+      "score": null,
+      "applicability": "insufficient_cases",
+      "reason": "No formal-check cases were present in this suite."
+    }
+  ]
 }
 ```
+
+See [Benchmark vocabulary](benchmark-vocabulary.md) for the harness vs system outcome split.
 
 ## Core metrics
 

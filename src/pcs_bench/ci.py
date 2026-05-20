@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+from pcs_bench.benchmark_vocabulary import (
+    BENCHMARK_FAILED,
+    BENCHMARK_PASSED,
+    is_invalid_release_case,
+    is_valid_release_case,
+)
 from pcs_bench.config import BenchConfig
 from pcs_bench.errors import ThresholdViolationError
 from pcs_bench.schemas import BenchmarkReport, MetricSummary
@@ -37,9 +43,7 @@ def check_ci_thresholds(
                 continue
             score = summary.score
         else:
-            score = report.metrics.get(metric_name)
-            if score is None:
-                continue
+            continue
 
         if score < threshold:
             failed_cases = _failed_cases_for_metric(report, metric_name)
@@ -48,13 +52,13 @@ def check_ci_thresholds(
             )
 
     for run in report.runs:
-        if run.expected_status in ("Admitted", "Accepted") and not run.passed:
+        if is_valid_release_case(run.expected_status, run.expected_system_outcome) and not run.passed:
             violations.append(
                 ThresholdViolationError("valid_release_rejected", 0.0, 1.0, [run.case_id])
             )
 
     for run in report.runs:
-        if run.expected_status == "Rejected" and run.observed_status in ("Admitted", "Accepted"):
+        if is_invalid_release_case(run.expected_status, run.expected_system_outcome) and run.passed:
             violations.append(
                 ThresholdViolationError("invalid_release_accepted", 0.0, 1.0, [run.case_id])
             )
@@ -65,21 +69,36 @@ def check_ci_thresholds(
 def check_live_required(
     report: BenchmarkReport,
     live_required_suites: list[str],
+    *,
+    release_grade: bool = False,
 ) -> list[str]:
-    """Return error messages when live-required suites ran only simulated cases."""
     errors: list[str] = []
     mode = report.summary.get("execution_mode", "simulate")
-    if mode == "live":
-        return errors
     live_cases = int(report.summary.get("live_cases", 0))
-    if live_required_suites and live_cases == 0:
-        errors.append(
-            f"CI live gate failed: suites {live_required_suites} require live execution "
-            f"but execution_mode={mode!r} with live_cases=0"
-        )
+    hybrid_fb = int(report.summary.get("hybrid_fallback_cases", 0))
+
+    if release_grade or report.summary.get("evidence_grade") == "release":
+        if mode != "live":
+            errors.append(f"Release-grade report requires execution_mode=live, got {mode!r}")
+        if live_cases == 0:
+            errors.append("Release-grade report requires live_cases > 0")
+        if hybrid_fb > 0:
+            errors.append("Release-grade report cannot include hybrid_fallback_cases")
+
     for suite_id in live_required_suites:
         suite_runs = [r for r in report.runs if r.suite_id == suite_id]
-        if suite_runs and live_cases == 0:
+        if not suite_runs:
+            continue
+        if release_grade or report.summary.get("evidence_grade") == "release":
+            if any(r.execution_kind == "hybrid_fallback" for r in suite_runs):
+                errors.append(
+                    f"Suite {suite_id} is live_required_for_release but used hybrid simulation fallback"
+                )
+            if not any(r.execution_kind == "live" for r in suite_runs):
+                errors.append(
+                    f"Suite {suite_id} is live_required_for_release but no cases ran live"
+                )
+        elif live_cases == 0:
             errors.append(
                 f"Suite {suite_id} is marked live_required_for_release but no cases ran live"
             )
@@ -101,3 +120,20 @@ def format_ci_failure(violations: list[ThresholdViolationError]) -> str:
                 lines.append(f"- {c}")
         lines.append("")
     return "\n".join(lines).strip()
+
+
+def _failed_cases_for_metric(report: BenchmarkReport, metric_name: str) -> list[str]:
+    if metric_name == "failure_localization_accuracy":
+        return [
+            r.case_id
+            for r in report.runs
+            if is_invalid_release_case(r.expected_status, r.expected_system_outcome)
+            and r.observed_responsible_component != r.expected_responsible_component
+        ]
+    if metric_name == "release_reproducibility_score":
+        return [
+            r.case_id
+            for r in report.runs
+            if is_valid_release_case(r.expected_status, r.expected_system_outcome) and not r.passed
+        ]
+    return [f.case_id for f in report.failures]

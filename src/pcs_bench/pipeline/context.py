@@ -27,6 +27,7 @@ class ExecutionMode(str, Enum):
 @dataclass
 class ObservedOutcome:
     status: str = "Unknown"
+    system_outcome: str | None = None
     failure_code: str | None = None
     responsible_component: str | None = None
     repair_hint: str | None = None

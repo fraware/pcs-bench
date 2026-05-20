@@ -1,14 +1,17 @@
-"""Benchmark case validation against pcs-core schemas."""
+"""Benchmark case and report validation against pcs-core schemas."""
 
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from pcs_bench.adapters.pcs_core import PcsCoreAdapter
+from pcs_bench.benchmark_vocabulary import normalize_legacy_case_payload
 from pcs_bench.cases import load_case
 from pcs_bench.config import BenchConfig
+from pcs_bench.report_export import PLACEHOLDER_COMMITS, validate_report_policy
 from pcs_bench.suites import load_suite, load_suite_cases
 
 
@@ -31,6 +34,38 @@ class SuiteValidationReport:
         return all(r.valid for r in self.results)
 
 
+_GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+_DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
+
+
+def validate_case_policy(data: dict) -> list[str]:
+    errors: list[str] = []
+    commit = data.get("source_commit", "")
+    if commit in PLACEHOLDER_COMMITS or not _GIT_COMMIT_RE.match(str(commit)):
+        errors.append(f"source_commit must be 40-char lowercase hex, got {commit!r}")
+
+    digest = data.get("signature_or_digest", "")
+    if not _DIGEST_RE.match(str(digest)):
+        errors.append("signature_or_digest must match sha256:<64 hex>")
+
+    artifacts = data.get("input_artifacts") or {}
+    if not artifacts.get("release_directory") and not artifacts.get("case_manifest_path"):
+        errors.append("input_artifacts requires release_directory or case_manifest_path")
+
+    if "release_dir" in artifacts:
+        errors.append("input_artifacts.release_dir is deprecated; use release_directory")
+
+    if data.get("expected_status") in ("Admitted", "Accepted", "Rejected"):
+        errors.append(
+            "expected_status must be benchmark vocabulary (passed/failed/skipped/error), "
+            "not system outcome (Admitted/Rejected)"
+        )
+    if "expected_system_outcome" not in data:
+        errors.append("expected_system_outcome is required")
+
+    return errors
+
+
 def validate_case_structure(case_path: Path) -> list[str]:
     errors: list[str] = []
     try:
@@ -44,6 +79,7 @@ def validate_case_structure(case_path: Path) -> list[str]:
         ("task_id", case.task_id),
         ("workflow_id", case.workflow_id),
         ("expected_status", case.expected_status),
+        ("expected_system_outcome", case.expected_system_outcome),
     ]
     for name, value in required:
         if not value:
@@ -56,21 +92,13 @@ def validate_case_structure(case_path: Path) -> list[str]:
 
 
 def _validate_with_jsonschema(case_path: Path, config: BenchConfig) -> list[str]:
-    try:
-        import jsonschema
-    except ImportError:
-        return []
-
-    schema = try_load_json_schema(config.repos.pcs_core, "BenchmarkCase.v0")
-    if not schema:
-        return []
+    pcs_core = config.repos.pcs_core
     with case_path.open(encoding="utf-8") as f:
-        data = json.load(f)
-    try:
-        jsonschema.validate(instance=data, schema=schema)
-        return []
-    except jsonschema.ValidationError as exc:
-        return [f"jsonschema: {exc.message}"]
+        data = normalize_legacy_case_payload(json.load(f))
+
+    from pcs_bench.validation.schema_loader import validate_instance
+
+    return validate_instance(data, "BenchmarkCase.v0", pcs_core)
 
 
 def validate_cases_for_suite(
@@ -85,7 +113,10 @@ def validate_cases_for_suite(
     pcs = PcsCoreAdapter(config.repos.pcs_core, config)
 
     for case_id, case_path, _case in load_suite_cases(suite_dir, suite):
+        with case_path.open(encoding="utf-8") as f:
+            raw = normalize_legacy_case_payload(json.load(f))
         errors = validate_case_structure(case_path)
+        errors.extend(validate_case_policy(raw))
         errors.extend(_validate_with_jsonschema(case_path, config))
         pcs_exit: int | None = None
 
@@ -95,12 +126,13 @@ def validate_cases_for_suite(
             if result.exit_code != 0:
                 errors.append(f"pcs validate failed (exit {result.exit_code}): {result.stderr[:500]}")
 
-        # Validate input artifact paths exist (relative to case directory)
         case = load_case(case_path)
-        for _key, rel in case.input_artifacts.items():
-            artifact_path = (case_path.parent / rel).resolve()
-            if not artifact_path.exists():
-                errors.append(f"Missing input artifact path: {artifact_path}")
+        for key in ("release_directory", "release_dir"):
+            rel = case.input_artifacts.get(key)
+            if rel:
+                artifact_path = (case_path.parent / rel).resolve()
+                if not artifact_path.exists():
+                    errors.append(f"Missing input artifact path: {artifact_path}")
 
         report.results.append(
             ValidationResult(
@@ -115,61 +147,11 @@ def validate_cases_for_suite(
     return report
 
 
-def _embedded_schema_path(schema_name: str) -> Path:
-    return Path(__file__).resolve().parent / "schemas" / "json" / f"{schema_name}.json"
-
-
-def try_load_json_schema(pcs_core_path: Path, schema_name: str) -> dict | None:
-    candidates = [
-        pcs_core_path / "schemas" / f"{schema_name}.json",
-        pcs_core_path / "schema" / f"{schema_name}.json",
-        _embedded_schema_path(schema_name),
-    ]
-    for path in candidates:
-        if path.exists():
-            with path.open(encoding="utf-8") as f:
-                return json.load(f)
-    return None
-
-
 def validate_report_data_strict(data: dict, pcs_core_path: Path) -> list[str]:
-    """Validate report dict against BenchmarkReport.v0 (embedded or pcs-core)."""
-    errors: list[str] = []
-    for field in (
-        "schema_version",
-        "report_id",
-        "benchmark_suite_id",
-        "runs",
-        "metrics",
-        "summary",
-        "coverage",
-        "failures",
-        "source_repo",
-        "source_commit",
-        "signature_or_digest",
-    ):
-        if field not in data or data[field] in (None, ""):
-            errors.append(f"Missing required field: {field}")
+    from pcs_bench.validation.schema_loader import validate_instance
 
-    digest = data.get("signature_or_digest")
-    if digest and not str(digest).startswith("sha256:"):
-        errors.append("signature_or_digest must be sha256:<hex>")
-
-    metrics = data.get("metrics")
-    if metrics is not None and not isinstance(metrics, dict):
-        errors.append("metrics must be an object")
-
-    schema = try_load_json_schema(pcs_core_path, "BenchmarkReport.v0")
-    if schema:
-        try:
-            import jsonschema
-        except ImportError:
-            errors.append("jsonschema package required for strict report validation")
-            return errors
-        try:
-            jsonschema.validate(instance=data, schema=schema)
-        except jsonschema.ValidationError as exc:
-            errors.append(f"jsonschema: {exc.message}")
+    errors = validate_instance(data, "BenchmarkReport.v0", pcs_core_path)
+    errors.extend(validate_report_policy(data))
     return errors
 
 
@@ -183,6 +165,7 @@ def validate_report_json(
     from pcs_bench.reports import load_report
 
     report = load_report(report_path)
-    data = to_benchmark_report_v0_dict(report)
+    runs_dir = report_path.parent / f"{report_path.stem}-runs"
+    data = to_benchmark_report_v0_dict(report, runs_output_dir=runs_dir)
     pcs_core = schema_source or config.repos.pcs_core
     return validate_report_data_strict(data, pcs_core)

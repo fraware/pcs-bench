@@ -9,6 +9,11 @@ from pathlib import Path
 
 from pcs_bench.adapters.base import CommandResult
 from pcs_bench.artifacts import discover_release_layout, enrich_analysis
+from pcs_bench.benchmark_vocabulary import (
+    SYSTEM_ADMITTED,
+    SYSTEM_REJECTED,
+    is_benchmark_pass_expected,
+)
 from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.constants import RESPONSIBLE_COMPONENT_TO_REPO
 from pcs_bench.simulation import simulate_outcome
@@ -59,7 +64,7 @@ def stage_emit_or_validate_certificate(ctx: CaseExecutionContext) -> None:
         profile_registry = ctx.release_dir
     cert_out = ctx.output_path("emitted_certificate.json")
     handoff_out = ctx.output_path("handoff_out.json")
-    if ctx.case.expected_status in ("Admitted", "Accepted"):
+    if is_benchmark_pass_expected(ctx.case.expected_status):
         result = ctx.adapters.certifyedge.emit_certificate(
             Path(handoff),
             profile_registry,
@@ -214,6 +219,7 @@ def stage_apply_simulation(ctx: CaseExecutionContext) -> None:
     sim = simulate_outcome(ctx.case, ctx.suite_dir)
     ctx.observed = ObservedOutcome(
         status=sim.status,
+        system_outcome=sim.system_outcome or sim.status,
         failure_code=sim.failure_code,
         responsible_component=sim.responsible_component,
         repair_hint=sim.repair_hint,
@@ -235,11 +241,13 @@ def stage_infer_from_commands(ctx: CaseExecutionContext) -> None:
     if ctx.observed.status != "Unknown":
         return
     failed = [c for c in ctx.commands if c.exit_code != 0]
-    if not failed and ctx.case.expected_status in ("Admitted", "Accepted"):
-        ctx.observed.status = "Admitted"
+    if not failed and is_benchmark_pass_expected(ctx.case.expected_status):
+        ctx.observed.system_outcome = SYSTEM_ADMITTED
+        ctx.observed.status = SYSTEM_ADMITTED
         return
     if failed:
-        ctx.observed.status = "Rejected"
+        ctx.observed.system_outcome = SYSTEM_REJECTED
+        ctx.observed.status = SYSTEM_REJECTED
         ctx.observed.failure_code = ctx.observed.failure_code or ctx.case.expected_failure_code
         ctx.observed.responsible_component = (
             ctx.observed.responsible_component
@@ -248,10 +256,12 @@ def stage_infer_from_commands(ctx: CaseExecutionContext) -> None:
         )
         if not ctx.observed.repair_hint:
             ctx.observed.repair_hint = _hint_from_stderr(failed[0])
-    elif ctx.case.expected_status in ("Admitted", "Accepted"):
-        ctx.observed.status = "Admitted"
+    elif is_benchmark_pass_expected(ctx.case.expected_status):
+        ctx.observed.system_outcome = SYSTEM_ADMITTED
+        ctx.observed.status = SYSTEM_ADMITTED
     else:
-        ctx.observed.status = ctx.case.expected_status
+        ctx.observed.system_outcome = ctx.case.expected_system_outcome or SYSTEM_REJECTED
+        ctx.observed.status = ctx.observed.system_outcome
 
 
 def _find_expected(ctx: CaseExecutionContext, name: str) -> Path | None:
@@ -272,7 +282,10 @@ def _merge_verification_file(ctx: CaseExecutionContext, path: Path) -> None:
 
 
 def _merge_verification_dict(ctx: CaseExecutionContext, data: dict) -> None:
+    from pcs_bench.benchmark_vocabulary import system_outcome_from_sidecar
+
     ctx.observed.status = data.get("status") or data.get("admission_status") or ctx.observed.status
+    ctx.observed.system_outcome = system_outcome_from_sidecar(data)
     ctx.observed.failure_code = data.get("failure_code") or data.get("code") or ctx.observed.failure_code
     ctx.observed.responsible_component = (
         data.get("responsible_component") or ctx.observed.responsible_component
@@ -289,7 +302,8 @@ def _apply_cli_failure(
     default_component: str,
 ) -> None:
     if ctx.observed.status == "Unknown":
-        ctx.observed.status = "Rejected"
+        ctx.observed.system_outcome = SYSTEM_REJECTED
+        ctx.observed.status = SYSTEM_REJECTED
     ctx.observed.responsible_component = (
         ctx.observed.responsible_component or _component_from_command(result) or default_component
     )
