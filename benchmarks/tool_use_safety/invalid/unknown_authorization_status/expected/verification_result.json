@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "unknown_authorization_status",
+  "responsible_component": "verifier",
+  "repair_hint_kind": "resolve_authorization_status"
+}

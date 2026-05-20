@@ -1,0 +1,5 @@
+{
+  "status": "Rejected",
+  "failure_code": "release_comparison_changed_dataset",
+  "responsible_component": "verifier"
+}

@@ -2,7 +2,7 @@
 PYTHON ?= python
 PCS_BENCH = $(PYTHON) -m pcs_bench
 
-.PHONY: install test bench ci fixtures manifest packet lint clean
+.PHONY: install test bench ci gate fixtures manifest packet schemas lint clean
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -10,8 +10,12 @@ install:
 fixtures:
 	$(PYTHON) scripts/materialize_fixtures.py
 
-manifest:
+manifest: fixtures
 	$(PCS_BENCH) verify-fixtures --write
+	$(PCS_BENCH) verify-fixtures
+
+schemas:
+	$(PYTHON) scripts/sync_pcs_core_schema.py --pcs-core ../pcs-core
 
 test:
 	$(PYTHON) -m pytest -q
@@ -19,12 +23,18 @@ test:
 bench:
 	$(PCS_BENCH) run --suite all --simulate --out reports/latest.json
 
-ci: install fixtures manifest
+ci: install manifest
 	$(PCS_BENCH) run --suite all --simulate --ci --out reports/ci.json
+	$(PCS_BENCH) validate-report --input reports/ci.json
 	$(PCS_BENCH) report --input reports/ci.json --format markdown --out reports/ci.md
+	$(PCS_BENCH) report --input reports/ci.json --format html --out reports/ci.html
+
+gate: install manifest
+	$(PCS_BENCH) gate --out reports/ci.json --out-packet packets/latest
 
 packet: ci
 	$(PCS_BENCH) packet --report reports/ci.json --out packets/latest
+	$(PCS_BENCH) verify-packet --packet packets/latest
 
 lint:
 	$(PYTHON) -m ruff check src tests

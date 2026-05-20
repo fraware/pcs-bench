@@ -39,9 +39,19 @@ def render_markdown(report: BenchmarkReport, comparison_text: str = "") -> str:
         lines.append(f"| {name} | `{short}` |")
     lines.append("")
 
-    lines.extend(["## Metric summary", "", "| Metric | Score |", "|--------|-------|"])
-    for name, score in sorted(report.metrics.items()):
-        lines.append(f"| {name} | {score:.3f} |")
+    lines.extend(
+        ["## Metric summary", "", "| Metric | Score | Applicability |", "|--------|-------|---------------|"]
+    )
+    if report.metric_summaries:
+        for summary in sorted(report.metric_summaries, key=lambda s: s.name):
+            score_txt = f"{summary.score:.3f}" if summary.score is not None else "n/a"
+            lines.append(f"| {summary.name} | {score_txt} | {summary.applicability} |")
+    else:
+        for name, score in sorted(report.metrics.items()):
+            if isinstance(score, (int, float)):
+                lines.append(f"| {name} | {score:.3f} | measured |")
+            else:
+                lines.append(f"| {name} | n/a | n/a |")
     lines.append("")
 
     if report.coverage:
@@ -92,6 +102,7 @@ def render_markdown(report: BenchmarkReport, comparison_text: str = "") -> str:
         )
     lines.append("")
 
+    summaries_by_name = {s.name: s for s in report.metric_summaries}
     for section_title, metric_name in [
         ("Certificate completeness", "certificate_completeness_score"),
         ("Registry coverage", "registry_coverage_score"),
@@ -99,9 +110,24 @@ def render_markdown(report: BenchmarkReport, comparison_text: str = "") -> str:
         ("Scientific Memory interpretability", "scientific_memory_interpretability_score"),
         ("Repair hint quality", "repair_hint_quality_score"),
     ]:
-        score = report.metrics.get(metric_name)
-        if score is not None:
-            lines.extend([f"## {section_title}", "", f"Score: **{score:.3f}**", ""])
+        summary = summaries_by_name.get(metric_name)
+        if summary:
+            score_txt = f"{summary.score:.3f}" if summary.score is not None else "n/a"
+            lines.extend(
+                [
+                    f"## {section_title}",
+                    "",
+                    f"Score: **{score_txt}** ({summary.applicability})",
+                    "",
+                ]
+            )
+            if summary.reason:
+                lines.append(f"- {summary.reason}")
+                lines.append("")
+        else:
+            score = report.metrics.get(metric_name)
+            if isinstance(score, (int, float)):
+                lines.extend([f"## {section_title}", "", f"Score: **{score:.3f}**", ""])
 
     if comparison_text:
         lines.extend(["## Regressions versus baseline", "", comparison_text, ""])

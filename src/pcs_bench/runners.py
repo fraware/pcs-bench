@@ -208,4 +208,15 @@ def run_suite(
 
     runs.sort(key=lambda r: r.case_id)
     report.runs = runs
+    simulated = sum(1 for r in runs if r.execution_kind in (None, "simulate", "dry_run"))
+    live = sum(1 for r in runs if r.execution_kind == "live")
+    hybrid_fb = sum(1 for r in runs if r.execution_kind == "hybrid_fallback")
+    report.summary.update(
+        {
+            "execution_mode": mode.value,
+            "simulated_cases": simulated,
+            "live_cases": live,
+            "hybrid_fallback_cases": hybrid_fb,
+        }
+    )
     return report, runs

@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "rejected_tool_certificate",
+  "responsible_component": "certificate_producer",
+  "repair_hint_kind": "regenerate_certificate"
+}

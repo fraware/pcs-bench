@@ -40,6 +40,9 @@ class BenchmarkSuite(BaseModel):
     description: str = ""
     cases: list[SuiteCaseRef] = Field(default_factory=list)
     metrics: list[str] = Field(default_factory=list)
+    required_metrics: list[str] = Field(default_factory=list)
+    optional_metrics: list[str] = Field(default_factory=list)
+    live_required_for_release: bool = False
 
 
 class CommandRecord(BaseModel):
@@ -76,11 +79,14 @@ class BenchmarkRun(BaseModel):
     passed: bool = False
     first_failing_command: str | None = None
     responsible_repo: str | None = None
+    execution_kind: str | None = None
 
 
 class MetricSummary(BaseModel):
     name: str
-    score: float
+    score: float | None = None
+    applicability: str = "measured"
+    reason: str | None = None
     numerator: int = 0
     denominator: int = 0
     details: dict[str, Any] = Field(default_factory=dict)
@@ -114,9 +120,11 @@ class BenchmarkReport(BaseModel):
         default_factory=lambda: datetime.now(timezone.utc).isoformat()
     )
     completed_at: str | None = None
+    source_repo: str | None = None
+    source_commit: str | None = None
     repo_commits: RepoCommits = Field(default_factory=RepoCommits)
     runs: list[BenchmarkRun] = Field(default_factory=list)
-    metrics: dict[str, float] = Field(default_factory=dict)
+    metrics: dict[str, Any] = Field(default_factory=dict)
     metric_summaries: list[MetricSummary] = Field(default_factory=list)
     summary: dict[str, Any] = Field(default_factory=dict)
     coverage: dict[str, Any] = Field(default_factory=dict)

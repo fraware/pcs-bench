@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "missing_policy_hash",
+  "responsible_component": "certificate_producer",
+  "repair_hint_kind": "attach_policy_hash"
+}

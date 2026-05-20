@@ -13,7 +13,7 @@ from rich.table import Table
 from pcs_bench import __version__
 from pcs_bench.adapters.base import AdapterStatus
 from pcs_bench.baselines import compare_reports, format_comparison_text
-from pcs_bench.ci import check_ci_thresholds, format_ci_failure
+from pcs_bench.ci import check_ci_thresholds, check_live_required, format_ci_failure
 from pcs_bench.config import ALL_SUITES, SUITE_ALIASES, BenchConfig
 from pcs_bench.errors import PcsBenchError, ThresholdViolationError
 from pcs_bench.coverage import apply_coverage_to_report
@@ -25,6 +25,7 @@ from pcs_bench.report_renderers.json import render_json
 from pcs_bench.report_renderers.markdown import render_markdown
 from pcs_bench.reports import load_report, save_report
 from pcs_bench.runners import AdapterRegistry, run_suite
+from pcs_bench.suite_policy import collect_suite_policy
 from pcs_bench.validation import validate_cases_for_suite
 from pcs_bench.workspace import create_run_workspace
 
@@ -182,6 +183,9 @@ def run_cmd(
     merged_runs = []
     last_report = None
     per_suite_scores: dict[str, float] = {}
+    required_metrics, optional_metrics, live_required_suites = collect_suite_policy(
+        cfg.benchmarks_root, suite_names
+    )
 
     for suite_name in suite_names:
         suite_dir = cfg.benchmarks_root / suite_name
@@ -224,8 +228,23 @@ def run_cmd(
         )
         final_report.runs = merged_runs
         final_report.summary["suites"] = suite_names
+        final_report.summary["execution_mode"] = last_report.summary.get("execution_mode", "simulate")
+        final_report.summary["simulated_cases"] = sum(
+            1 for r in merged_runs if r.execution_kind in (None, "simulate", "dry_run")
+        )
+        final_report.summary["live_cases"] = sum(
+            1 for r in merged_runs if r.execution_kind == "live"
+        )
+        final_report.summary["hybrid_fallback_cases"] = sum(
+            1 for r in merged_runs if r.execution_kind == "hybrid_fallback"
+        )
 
-    summaries = compute_all_metrics(final_report.runs, suite_scores=per_suite_scores)
+    summaries = compute_all_metrics(
+        final_report.runs,
+        suite_scores=per_suite_scores,
+        required_metrics=required_metrics,
+        optional_metrics=optional_metrics,
+    )
     apply_metrics_to_report(final_report, summaries)
     apply_coverage_to_report(final_report)
 
@@ -236,18 +255,27 @@ def run_cmd(
 
     report_errors = validate_report_json(out, cfg)
     if report_errors:
-        console.print("[yellow]Report schema warnings:[/yellow]")
         for err in report_errors:
-            console.print(f"  - {err}")
+            console.print(f"  [red]schema[/red] {err}")
+        if ci:
+            raise typer.Exit(1)
 
     if verbose:
-        table = Table("Metric", "Score")
-        for name, score in final_report.metrics.items():
-            table.add_row(name, f"{score:.3f}")
+        table = Table("Metric", "Score", "Applicability")
+        for summary in final_report.metric_summaries:
+            score_txt = f"{summary.score:.3f}" if summary.score is not None else "n/a"
+            table.add_row(summary.name, score_txt, summary.applicability)
         console.print(table)
 
     if ci:
-        violations = check_ci_thresholds(final_report, cfg)
+        violations = check_ci_thresholds(
+            final_report, cfg, required_metrics=required_metrics
+        )
+        live_errors = check_live_required(final_report, live_required_suites)
+        if live_errors:
+            for msg in live_errors:
+                console.print(f"[red]{msg}[/red]")
+            raise typer.Exit(1)
         if violations:
             console.print(format_ci_failure(violations))
             raise typer.Exit(1)
@@ -317,14 +345,134 @@ def packet_cmd(
     report_path: Path = typer.Option(..., "--report", help="Benchmark report JSON."),
     out: Path = typer.Option(Path("packets/latest"), "--out", help="Output packet directory."),
     baseline: Optional[Path] = typer.Option(None, "--baseline"),
+    workspace: Optional[Path] = typer.Option(None, "--workspace", help="Run workspace for logs."),
     config: Optional[Path] = typer.Option(None, "--config"),
 ) -> None:
     """Export a self-contained benchmark packet for external reviewers."""
     cfg = _load_config(config)
     packet_dir = export_benchmark_packet(
-        report_path, out, cfg, baseline_path=baseline
+        report_path,
+        out,
+        cfg,
+        baseline_path=baseline,
+        workspace_root=workspace,
     )
     console.print(f"[green]Benchmark packet written to[/green] {packet_dir}")
+
+
+@app.command("validate-report")
+def validate_report_cmd(
+    input: Path = typer.Option(..., "--input", help="Benchmark report JSON."),
+    schema_source: Optional[Path] = typer.Option(
+        None,
+        "--schema-source",
+        help="Path to pcs-core repo for BenchmarkReport.v0 schema.",
+    ),
+    config: Optional[Path] = typer.Option(None, "--config"),
+) -> None:
+    """Validate a report against pcs-core BenchmarkReport.v0."""
+    cfg = _load_config(config).apply_cli_overrides(
+        pcs_core=schema_source,
+    )
+    from pcs_bench.validation import validate_report_json
+
+    errors = validate_report_json(input, cfg, schema_source=schema_source)
+    if errors:
+        console.print("[red]Report validation failed:[/red]")
+        for err in errors:
+            console.print(f"  - {err}")
+        raise typer.Exit(1)
+    console.print("[green]Report validates against BenchmarkReport.v0[/green]")
+
+
+@app.command("sync-schemas")
+def sync_schemas_cmd(
+    pcs_core: Path = typer.Option(..., "--pcs-core", help="Path to pcs-core repository."),
+) -> None:
+    """Copy JSON schemas from pcs-core into embedded pcs-bench fallbacks."""
+    from pcs_bench.schema_sync import sync_schemas_from_pcs_core
+
+    result = sync_schemas_from_pcs_core(pcs_core)
+    if result.errors:
+        for err in result.errors:
+            console.print(f"[red]{err}[/red]")
+        raise typer.Exit(1)
+    for name in result.copied:
+        console.print(f"[green]Copied[/green] {name}.json")
+    if result.missing:
+        console.print(f"[dim]Not found in pcs-core:[/dim] {', '.join(result.missing)}")
+    console.print("[green]Schema sync complete[/green]")
+
+
+@app.command("gate")
+def gate_cmd(
+    config: Optional[Path] = typer.Option(None, "--config"),
+    out: Path = typer.Option(Path("reports/ci.json"), "--out"),
+    packet_dir: Path = typer.Option(Path("packets/latest"), "--out-packet", "--packet"),
+    suite: str = typer.Option("all", "--suite"),
+    simulate: bool = typer.Option(True, "--simulate/--live", help="Simulate (default) or live."),
+) -> None:
+    """Run full release gate: fixtures, manifest, cases, benchmark, report validation, packet."""
+    import subprocess
+
+    root = Path.cwd()
+    py = sys.executable
+
+    steps = [
+        ([py, str(root / "scripts" / "materialize_fixtures.py")], "materialize fixtures"),
+        ([py, "-m", "pcs_bench", "verify-fixtures", "--write"], "write fixture manifest"),
+        ([py, "-m", "pcs_bench", "verify-fixtures"], "verify fixture manifest"),
+        ([py, "-m", "pcs_bench", "validate-cases", "--suite", suite, "--dry-run"], "validate cases"),
+    ]
+    run_args = [py, "-m", "pcs_bench", "run", "--suite", suite, "--ci", "--out", str(out)]
+    if simulate:
+        run_args.append("--simulate")
+    else:
+        run_args.append("--live")
+    steps.append((run_args, "benchmark run"))
+    steps.extend(
+        [
+            ([py, "-m", "pcs_bench", "validate-report", "--input", str(out)], "validate report"),
+            (
+                [py, "-m", "pcs_bench", "packet", "--report", str(out), "--out", str(packet_dir)],
+                "export packet",
+            ),
+            (
+                [py, "-m", "pcs_bench", "verify-packet", "--packet", str(packet_dir)],
+                "verify packet",
+            ),
+        ]
+    )
+
+    for cmd, label in steps:
+        console.print(f"[bold]gate[/bold] {label}")
+        proc = subprocess.run(cmd, cwd=root)
+        if proc.returncode != 0:
+            console.print(f"[red]Gate failed at step:[/red] {label}")
+            raise typer.Exit(proc.returncode)
+
+    console.print(f"[green]Gate passed[/green] report={out} packet={packet_dir}")
+
+
+@app.command("verify-packet")
+def verify_packet_cmd(
+    packet: Path = typer.Option(..., "--packet", help="Packet directory."),
+    config: Optional[Path] = typer.Option(None, "--config"),
+) -> None:
+    """Verify benchmark packet structure and reproducibility fixtures."""
+    from pcs_bench.packet import verify_benchmark_packet
+
+    cfg = _load_config(config)
+    result = verify_benchmark_packet(packet, cfg)
+    if result.warnings:
+        for w in result.warnings:
+            console.print(f"[yellow]{w}[/yellow]")
+    if not result.valid:
+        console.print("[red]Packet verification failed:[/red]")
+        for err in result.errors:
+            console.print(f"  - {err}")
+        raise typer.Exit(1)
+    console.print("[green]Packet verification passed[/green]")
 
 
 @app.command("report")

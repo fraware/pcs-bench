@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "wrong_admission_profile",
+  "responsible_component": "provability_fabric",
+  "repair_hint_kind": "select_correct_admission_profile"
+}

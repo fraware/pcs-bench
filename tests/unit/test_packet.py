@@ -31,3 +31,13 @@ def test_packet_export(tmp_path):
     assert (packet_dir / "BenchmarkReport.v0.json").exists()
     assert (packet_dir / "README.md").exists()
     assert (packet_dir / "report.md").exists()
+    assert (packet_dir / "limitations.md").exists()
+    assert (packet_dir / "environment_summary.json").exists()
+    assert (packet_dir / "reproduce.sh").exists()
+
+    verify = runner.invoke(
+        app,
+        ["verify-packet", "--packet", str(packet_dir)],
+        catch_exceptions=False,
+    )
+    assert verify.exit_code == 0

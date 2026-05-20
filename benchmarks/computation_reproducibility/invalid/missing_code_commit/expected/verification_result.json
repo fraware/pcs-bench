@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "missing_code_commit",
+  "responsible_component": "runtime_producer",
+  "repair_hint_kind": "pin_source_commit"
+}

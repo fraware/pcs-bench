@@ -1,0 +1,17 @@
+{
+  "schema_version": "v0",
+  "case_id": "tool-use-missing-handoff-v0",
+  "task_id": "tool-use-missing-handoff-v0-task",
+  "workflow_id": "agent_tool_use.safety_v0",
+  "case_kind": "missing_handoff",
+  "input_artifacts": {
+    "release_dir": "input_artifacts/"
+  },
+  "expected_status": "Rejected",
+  "expected_failure_code": "missing_handoff",
+  "expected_responsible_component": "handoff",
+  "expected_repair_hint_kind": "provide_handoff_manifest",
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+}

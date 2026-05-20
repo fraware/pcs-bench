@@ -1,0 +1,5 @@
+{
+  "status": "Rejected",
+  "failure_code": "release_comparison_changed_certificate",
+  "responsible_component": "verifier"
+}

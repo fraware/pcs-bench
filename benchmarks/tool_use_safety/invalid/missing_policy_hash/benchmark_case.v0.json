@@ -1,0 +1,17 @@
+{
+  "schema_version": "v0",
+  "case_id": "tool-use-missing-policy-hash-v0",
+  "task_id": "tool-use-missing-policy-hash-v0-task",
+  "workflow_id": "agent_tool_use.safety_v0",
+  "case_kind": "missing_policy_hash",
+  "input_artifacts": {
+    "release_dir": "input_artifacts/"
+  },
+  "expected_status": "Rejected",
+  "expected_failure_code": "missing_policy_hash",
+  "expected_responsible_component": "certificate_producer",
+  "expected_repair_hint_kind": "attach_policy_hash",
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+}

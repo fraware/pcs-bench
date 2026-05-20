@@ -1,13 +1,34 @@
 suite_id: scientific-memory-rendering-v0
 workflow_id: pcs.scientific_memory
-domain: human_interpretability
-description: Benchmarks Scientific Memory import, rendering, and required evidence sections.
+domain: scientific_memory
+description: Benchmarks Scientific Memory rendering completeness and release comparison.
+live_required_for_release: false
+
+required_metrics:
+  - scientific_memory_interpretability_score
+  - failure_localization_accuracy
+
+optional_metrics:
+  - formal_check_coverage_score
+  - release_reproducibility_score
 
 cases:
   - case_id: render-all-sections-v0
     path: valid/render-all-sections-v0/benchmark_case.v0.json
-  - case_id: missing-formal-section-v0
-    path: invalid/missing-formal-section-v0/benchmark_case.v0.json
+  - case_id: missing-formal-trust-kernel-section-v0
+    path: invalid/missing-formal-trust-kernel-section/benchmark_case.v0.json
+  - case_id: missing-artifact-registry-section-v0
+    path: invalid/missing-artifact-registry-section/benchmark_case.v0.json
+  - case_id: missing-lineage-section-v0
+    path: invalid/missing-lineage-section/benchmark_case.v0.json
+  - case_id: missing-staleness-section-v0
+    path: invalid/missing-staleness-section/benchmark_case.v0.json
+  - case_id: failed-release-rendering-v0
+    path: invalid/failed-release-rendering/benchmark_case.v0.json
+  - case_id: release-comparison-changed-certificate-v0
+    path: invalid/release-comparison-changed-certificate/benchmark_case.v0.json
+  - case_id: release-comparison-changed-dataset-v0
+    path: invalid/release-comparison-changed-dataset/benchmark_case.v0.json
 
 metrics:
   - scientific_memory_interpretability_score

@@ -16,27 +16,38 @@ function Run($cmd) {
 switch ($Target) {
     "install" { Run "$Python -m pip install -e `".[dev]`"" }
     "fixtures" { Run "$Python scripts/materialize_fixtures.py" }
-    "manifest" { Run "$PcsBench verify-fixtures --write" }
+    "manifest" {
+        Run "$Python scripts/materialize_fixtures.py"
+        Run "$PcsBench verify-fixtures --write"
+        Run "$PcsBench verify-fixtures"
+    }
+    "schemas" { Run "$Python scripts/sync_pcs_core_schema.py --pcs-core ../pcs-core" }
     "test" { Run "$Python -m pytest -q" }
     "bench" { Run "$PcsBench run --suite all --simulate --out reports/latest.json" }
     "ci" {
-        Run "$Python -m pip install -e `".[dev]`""
-        Run "$Python scripts/materialize_fixtures.py"
-        Run "$PcsBench verify-fixtures --write"
+        & $PSScriptRoot/make.ps1 manifest
         Run "$PcsBench run --suite all --simulate --ci --out reports/ci.json"
+        Run "$PcsBench validate-report --input reports/ci.json"
         Run "$PcsBench report --input reports/ci.json --format markdown --out reports/ci.md"
+        Run "$PcsBench report --input reports/ci.json --format html --out reports/ci.html"
+    }
+    "gate" {
+        & $PSScriptRoot/make.ps1 install
+        & $PSScriptRoot/make.ps1 manifest
+        Run "$PcsBench gate --out reports/ci.json --out-packet packets/latest"
     }
     "packet" {
         & $PSScriptRoot/make.ps1 ci
         Run "$PcsBench packet --report reports/ci.json --out packets/latest"
+        Run "$PcsBench verify-packet --packet packets/latest"
     }
     "html" {
         Run "$PcsBench report --input reports/ci.json --format html --out reports/ci.html"
     }
     default {
         Write-Host @"
-Targets: install, fixtures, manifest, test, bench, ci, packet, html
-Example: .\make.ps1 ci
+Targets: install, fixtures, manifest, schemas, test, bench, ci, gate, packet, html
+Example: .\make.ps1 gate
 "@
     }
 }

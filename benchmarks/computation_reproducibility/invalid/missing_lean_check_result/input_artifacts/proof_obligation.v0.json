@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "obligation_id": "obligation-computation-missing-lean-check-result-v0",
+  "theorem": "computation_integrity",
+  "required": true
+}

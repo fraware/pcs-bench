@@ -50,8 +50,12 @@ pcs-bench compare --old reports/baseline.json --new reports/latest.json
 pcs-bench explain --report reports/latest.json --case labtrust-trace-hash-tamper-v0
 pcs-bench list-suites
 
-# Export reviewer packet (JSON + MD + HTML + case fixtures + reproduce scripts)
+# Strict BenchmarkReport.v0 validation (pcs-core schema)
+pcs-bench validate-report --input reports/ci.json --schema-source ../pcs-core
+
+# Export reviewer packet and verify structure
 pcs-bench packet --report reports/ci.json --out packets/latest
+pcs-bench verify-packet --packet packets/latest
 
 # Fixture integrity for reproducible benchmarks
 pcs-bench verify-fixtures --write
@@ -64,9 +68,20 @@ pcs-bench run --suite all --simulate --parallel 4
 
 # Structured compare output
 pcs-bench compare --old reports/baseline.json --new reports/latest.json --format json
+
+# Full local release gate (fixtures + manifest + CI + report schema + packet)
+pcs-bench gate
+
+# Sync JSON schemas from a local pcs-core checkout
+pcs-bench sync-schemas --pcs-core ../pcs-core
+
+# Optional: copy real release bundles from LabTrust into case fixtures
+python scripts/pull_release_fixtures.py --suite labtrust_qc_release
 ```
 
-Or use `make ci` / `make packet` (Makefile calls `python -m pcs_bench`). On Windows: `.\make.ps1 ci` or run commands directly after `pip install -e ".[dev]"`.
+Or use `make gate` / `make ci` / `make packet`. On Windows: `.\make.ps1 gate`.
+
+See [CI mode](docs/ci-mode.md), [Metrics](docs/metrics.md), and [Live release gate](docs/live-gate.md).
 
 ## What pcs-bench owns
 
@@ -87,6 +102,7 @@ PCS schemas, release manifests, certificates, runtime workflows, PF admission lo
 - [Adding a benchmark suite](docs/adding-a-benchmark-suite.md)
 - [Interpreting results](docs/interpreting-results.md)
 - [CI mode](docs/ci-mode.md)
+- [Live release gate](docs/live-gate.md)
 
 ## License
 

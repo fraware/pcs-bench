@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "release_id": "computation-dataset-hash-mismatch-v0",
+  "workflow_id": "scientific_computation.reproducibility_v0",
+  "status": "Rejected"
+}

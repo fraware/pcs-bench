@@ -1,0 +1,17 @@
+{
+  "schema_version": "v0",
+  "case_id": "tool-use-unknown-authorization-status-v0",
+  "task_id": "tool-use-unknown-authorization-status-v0-task",
+  "workflow_id": "agent_tool_use.safety_v0",
+  "case_kind": "unknown_authorization_status",
+  "input_artifacts": {
+    "release_dir": "input_artifacts/"
+  },
+  "expected_status": "Rejected",
+  "expected_failure_code": "unknown_authorization_status",
+  "expected_responsible_component": "verifier",
+  "expected_repair_hint_kind": "resolve_authorization_status",
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+}

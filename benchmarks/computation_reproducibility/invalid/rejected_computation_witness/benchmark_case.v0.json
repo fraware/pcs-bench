@@ -1,0 +1,17 @@
+{
+  "schema_version": "v0",
+  "case_id": "computation-rejected-computation-witness-v0",
+  "task_id": "computation-rejected-computation-witness-v0-task",
+  "workflow_id": "scientific_computation.reproducibility_v0",
+  "case_kind": "rejected_computation_witness",
+  "input_artifacts": {
+    "release_dir": "input_artifacts/"
+  },
+  "expected_status": "Rejected",
+  "expected_failure_code": "rejected_computation_witness",
+  "expected_responsible_component": "verifier",
+  "expected_repair_hint_kind": "recompute_and_witness",
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+}

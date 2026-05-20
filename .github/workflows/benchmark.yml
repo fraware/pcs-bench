@@ -5,14 +5,23 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      run_live_labtrust:
+        description: Run LabTrust live gate (requires sibling repos)
+        type: boolean
+        default: false
+
+env:
+  PCS_CORE_PATH: ${{ github.workspace }}/pcs-core
+  LABTRUST_PATH: ${{ github.workspace }}/LabTrust-Gym
 
 jobs:
-  benchmark:
+  lint-and-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
-
     steps:
       - uses: actions/checkout@v4
 
@@ -21,34 +30,125 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install pcs-bench
-        run: pip install -e ".[dev]" && pip install ruff
+      - name: Install
+        run: pip install -e ".[dev]" ruff
 
       - name: Ruff
         run: ruff check src tests
 
+      - name: Unit and integration tests
+        run: python -m pytest -q
+
+  simulate-gate:
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pcs-bench
+        run: pip install -e ".[dev]"
+
       - name: Materialize fixtures
         run: python scripts/materialize_fixtures.py
 
-      - name: Update fixture manifest
-        run: pcs-bench verify-fixtures --write
+      - name: Verify fixture manifest integrity
+        run: |
+          python -m pcs_bench verify-fixtures --write
+          python -m pcs_bench verify-fixtures
 
-      - name: Validate all cases
-        run: pcs-bench validate-cases --suite all --dry-run
+      - name: Validate all benchmark cases
+        run: python -m pcs_bench validate-cases --suite all --dry-run
 
-      - name: Run full benchmark (simulate)
-        run: pcs-bench run --suite all --simulate --ci --out reports/ci.json
+      - name: Run full benchmark (simulate + CI)
+        run: python -m pcs_bench run --suite all --simulate --ci --out reports/ci.json
 
-      - name: Generate Markdown report
-        run: pcs-bench report --input reports/ci.json --format markdown --out reports/ci.md
+      - name: Validate BenchmarkReport.v0
+        run: python -m pcs_bench validate-report --input reports/ci.json
 
-      - name: Export reviewer packet
-        run: pcs-bench packet --report reports/ci.json --out packets/ci
+      - name: Generate reports
+        run: |
+          python -m pcs_bench report --input reports/ci.json --format markdown --out reports/ci.md
+          python -m pcs_bench report --input reports/ci.json --format html --out reports/ci.html
+          python -m pcs_bench report --input reports/ci.json --format csv --out reports/ci.csv
+
+      - name: Export and verify reviewer packet
+        run: |
+          python -m pcs_bench packet --report reports/ci.json --out packets/ci
+          python -m pcs_bench verify-packet --packet packets/ci
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pcs-bench-report-py${{ matrix.python-version }}
+          name: pcs-bench-simulate-gate
           path: |
             reports/ci.json
             reports/ci.md
+            reports/ci.html
+            reports/ci.csv
+            packets/ci
+            benchmarks/fixture_manifest.json
+
+  live-labtrust-gate:
+    runs-on: ubuntu-latest
+    needs: simulate-gate
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.run_live_labtrust == true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout pcs-core
+        uses: actions/checkout@v4
+        with:
+          repository: SentinelOps-CI/pcs-core
+          path: pcs-core
+        continue-on-error: true
+
+      - name: Checkout LabTrust-Gym
+        uses: actions/checkout@v4
+        with:
+          repository: fraware/LabTrust-Gym
+          path: LabTrust-Gym
+        continue-on-error: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pcs-bench
+        run: pip install -e ".[dev]"
+
+      - name: Sync schemas from pcs-core
+        run: python scripts/sync_pcs_core_schema.py --pcs-core pcs-core
+        continue-on-error: true
+
+      - name: Check adapters
+        run: |
+          python -m pcs_bench check-adapters \
+            --pcs-core pcs-core \
+            --labtrust LabTrust-Gym
+
+      - name: Live LabTrust benchmark (release gate)
+        run: |
+          python -m pcs_bench run \
+            --suite labtrust-qc-release \
+            --live \
+            --ci \
+            --pcs-core pcs-core \
+            --labtrust LabTrust-Gym \
+            --out reports/live-labtrust.json
+
+      - name: Validate live report
+        run: python -m pcs_bench validate-report --input reports/live-labtrust.json --schema-source pcs-core
+
+      - name: Upload live report
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcs-bench-live-labtrust
+          path: reports/live-labtrust.json

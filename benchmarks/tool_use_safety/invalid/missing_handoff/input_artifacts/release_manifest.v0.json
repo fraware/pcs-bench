@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "release_id": "tool-use-missing-handoff-v0",
+  "workflow_id": "agent_tool_use.safety_v0",
+  "status": "Rejected"
+}

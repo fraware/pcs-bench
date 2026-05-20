@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "missing_handoff",
+  "responsible_component": "handoff",
+  "repair_hint_kind": "provide_handoff_manifest"
+}

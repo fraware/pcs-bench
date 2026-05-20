@@ -14,6 +14,8 @@ reports/*.md
 reports/*.html
 reports/*.csv
 !reports/.gitkeep
+packets/
+!packets/.gitkeep
 .venv/
 venv/
 .env

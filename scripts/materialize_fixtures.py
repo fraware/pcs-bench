@@ -228,61 +228,17 @@ def main() -> None:
                 SECTIONS_FULL,
             )
 
-    # Tool-use suite
-    tool = ROOT / "benchmarks" / "tool_use_safety"
-    write_bundle(
-        tool / "valid/tool-use-valid-v0/input_artifacts",
-        release_id="tool-use-valid-v0",
-        workflow_id="agent_tool_use.safety_v0",
-        status="Admitted",
-    )
-    write_expected(
-        tool / "valid/tool-use-valid-v0",
-        {"status": "Admitted"},
-        SECTIONS_FULL,
-    )
-    write_bundle(
-        tool / "invalid/policy_hash_mismatch/input_artifacts",
-        release_id="tool-use-policy-hash-mismatch-v0",
-        workflow_id="agent_tool_use.safety_v0",
-        status="Rejected",
-        cert_status="Rejected",
-    )
-    write_expected(
-        tool / "invalid/policy_hash_mismatch",
-        {
-            "status": "Rejected",
-            "failure_code": "policy_hash_mismatch",
-            "responsible_component": "runtime_producer",
-            "repair_hint_kind": "regenerate_tool_trace",
-        },
+    import sys
+
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from generate_expanded_cases import (
+        generate_computation_cases,
+        generate_memory_cases,
+        generate_tool_use_cases,
     )
 
-    # Computation suite
-    comp = ROOT / "benchmarks" / "computation_reproducibility"
-    write_bundle(
-        comp / "valid/computation-valid-v0/input_artifacts",
-        release_id="computation-valid-v0",
-        workflow_id="scientific_computation.reproducibility_v0",
-        status="Admitted",
-    )
-    write_expected(comp / "valid/computation-valid-v0", {"status": "Admitted"}, SECTIONS_FULL)
-    write_bundle(
-        comp / "invalid/result_hash_mismatch/input_artifacts",
-        release_id="computation-result-hash-mismatch-v0",
-        workflow_id="scientific_computation.reproducibility_v0",
-        status="Rejected",
-        cert_status="Rejected",
-    )
-    write_expected(
-        comp / "invalid/result_hash_mismatch",
-        {
-            "status": "Rejected",
-            "failure_code": "result_hash_mismatch",
-            "responsible_component": "verifier",
-            "repair_hint_kind": "recompute_and_witness",
-        },
-    )
+    generate_tool_use_cases(write_bundle, write_expected, SECTIONS_FULL)
+    generate_computation_cases(write_bundle, write_expected, SECTIONS_FULL)
 
     formal = ROOT / "benchmarks" / "formal_trust_kernel"
     write_bundle(
@@ -332,27 +288,7 @@ def main() -> None:
         },
     )
 
-    sm = ROOT / "benchmarks" / "scientific_memory_rendering"
-    write_bundle(
-        sm / "valid/render-all-sections-v0/input_artifacts",
-        release_id="render-all-sections-v0",
-        workflow_id="pcs.scientific_memory",
-        status="Admitted",
-    )
-    write_expected(sm / "valid/render-all-sections-v0", {"status": "Admitted"}, SECTIONS_FULL)
-
-    write_bundle(
-        sm / "invalid/missing-formal-section-v0/input_artifacts",
-        release_id="missing-formal-section-v0",
-        workflow_id="pcs.scientific_memory",
-        status="Rejected",
-    )
-    partial = [s for s in SECTIONS_FULL if s != "Formal Trust Kernel"]
-    write_expected(
-        sm / "invalid/missing-formal-section-v0",
-        {"status": "Rejected", "failure_code": "missing_rendered_section", "responsible_component": "scientific_memory"},
-        partial,
-    )
+    generate_memory_cases(write_bundle, write_expected, SECTIONS_FULL)
 
     cross = ROOT / "benchmarks" / "cross_domain"
     write_bundle(

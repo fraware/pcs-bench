@@ -18,8 +18,16 @@ def render_csv(report: BenchmarkReport) -> str:
     writer.writerow(["report", "started_at", report.started_at])
     writer.writerow(["report", "completed_at", report.completed_at or ""])
 
-    for name, score in sorted(report.metrics.items()):
-        writer.writerow(["metric", name, f"{score:.4f}"])
+    if report.metric_summaries:
+        for summary in sorted(report.metric_summaries, key=lambda s: s.name):
+            score_val = "" if summary.score is None else f"{summary.score:.4f}"
+            writer.writerow(
+                ["metric", summary.name, score_val, summary.applicability, summary.reason or ""]
+            )
+    else:
+        for name, score in sorted(report.metrics.items()):
+            if isinstance(score, (int, float)):
+                writer.writerow(["metric", name, f"{score:.4f}", "measured", ""])
 
     writer.writerow([])
     writer.writerow(

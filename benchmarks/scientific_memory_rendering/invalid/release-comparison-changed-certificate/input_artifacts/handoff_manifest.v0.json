@@ -1,0 +1,9 @@
+{
+  "schema_version": "v0",
+  "handoff_id": "handoff-release-comparison-changed-certificate-v0",
+  "workflow_id": "pcs.scientific_memory",
+  "artifacts": [
+    "runtime_trace",
+    "trace_certificate"
+  ]
+}

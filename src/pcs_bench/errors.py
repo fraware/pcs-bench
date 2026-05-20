@@ -28,14 +28,23 @@ class ValidationError(PcsBenchError):
 class ThresholdViolationError(PcsBenchError):
     """CI threshold was not met."""
 
-    def __init__(self, metric: str, score: float, threshold: float, failed_cases: list[str]):
+    def __init__(
+        self,
+        metric: str,
+        score: float,
+        threshold: float,
+        failed_cases: list[str],
+        *,
+        message: str | None = None,
+    ):
         self.metric = metric
         self.score = score
         self.threshold = threshold
         self.failed_cases = failed_cases
-        super().__init__(
+        self.message = message or (
             f"{metric} below threshold: score={score:.2f}, threshold={threshold:.2f}"
         )
+        super().__init__(self.message)
 
 
 class ReportNotFoundError(PcsBenchError):

@@ -132,17 +132,57 @@ def try_load_json_schema(pcs_core_path: Path, schema_name: str) -> dict | None:
     return None
 
 
-def validate_report_json(report_path: Path, config: BenchConfig) -> list[str]:
-    schema = try_load_json_schema(config.repos.pcs_core, "BenchmarkReport.v0")
-    if not schema:
-        return []
-    try:
-        import jsonschema
-    except ImportError:
-        return []
-    data = json.loads(report_path.read_text(encoding="utf-8"))
-    try:
-        jsonschema.validate(instance=data, schema=schema)
-        return []
-    except jsonschema.ValidationError as exc:
-        return [f"jsonschema: {exc.message}"]
+def validate_report_data_strict(data: dict, pcs_core_path: Path) -> list[str]:
+    """Validate report dict against BenchmarkReport.v0 (embedded or pcs-core)."""
+    errors: list[str] = []
+    for field in (
+        "schema_version",
+        "report_id",
+        "benchmark_suite_id",
+        "runs",
+        "metrics",
+        "summary",
+        "coverage",
+        "failures",
+        "source_repo",
+        "source_commit",
+        "signature_or_digest",
+    ):
+        if field not in data or data[field] in (None, ""):
+            errors.append(f"Missing required field: {field}")
+
+    digest = data.get("signature_or_digest")
+    if digest and not str(digest).startswith("sha256:"):
+        errors.append("signature_or_digest must be sha256:<hex>")
+
+    metrics = data.get("metrics")
+    if metrics is not None and not isinstance(metrics, dict):
+        errors.append("metrics must be an object")
+
+    schema = try_load_json_schema(pcs_core_path, "BenchmarkReport.v0")
+    if schema:
+        try:
+            import jsonschema
+        except ImportError:
+            errors.append("jsonschema package required for strict report validation")
+            return errors
+        try:
+            jsonschema.validate(instance=data, schema=schema)
+        except jsonschema.ValidationError as exc:
+            errors.append(f"jsonschema: {exc.message}")
+    return errors
+
+
+def validate_report_json(
+    report_path: Path,
+    config: BenchConfig,
+    *,
+    schema_source: Path | None = None,
+) -> list[str]:
+    from pcs_bench.report_export import to_benchmark_report_v0_dict
+    from pcs_bench.reports import load_report
+
+    report = load_report(report_path)
+    data = to_benchmark_report_v0_dict(report)
+    pcs_core = schema_source or config.repos.pcs_core
+    return validate_report_data_strict(data, pcs_core)

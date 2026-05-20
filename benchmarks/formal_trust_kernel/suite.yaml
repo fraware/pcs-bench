@@ -2,6 +2,16 @@ suite_id: formal-trust-kernel-v0
 workflow_id: pcs.formal_trust_kernel
 domain: formal_methods
 description: Benchmarks Lean trust-kernel obligations and check results.
+live_required_for_release: false
+
+required_metrics:
+  - formal_check_coverage_score
+  - failure_localization_accuracy
+  - repair_hint_quality_score
+
+optional_metrics:
+  - release_reproducibility_score
+  - scientific_memory_interpretability_score
 
 cases:
   - case_id: lean-obligations-met-v0

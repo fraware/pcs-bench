@@ -4,6 +4,18 @@ domain: process_safety
 description: >
   Benchmarks PCS release-chain integrity and failure localization
   for the LabTrust QC workflow.
+live_required_for_release: true
+
+required_metrics:
+  - release_reproducibility_score
+  - failure_localization_accuracy
+  - certificate_completeness_score
+  - registry_coverage_score
+  - repair_hint_quality_score
+
+optional_metrics:
+  - formal_check_coverage_score
+  - scientific_memory_interpretability_score
 
 cases:
   - case_id: labtrust-valid-release-v0

@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "tool_trace_hash_mismatch",
+  "responsible_component": "runtime_producer",
+  "repair_hint_kind": "regenerate_tool_trace"
+}

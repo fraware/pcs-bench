@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "claim_id": "computation-environment-digest-mismatch-v0",
+  "workflow_id": "scientific_computation.reproducibility_v0",
+  "status": "Rejected"
+}

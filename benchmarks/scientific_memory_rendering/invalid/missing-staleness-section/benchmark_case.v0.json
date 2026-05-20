@@ -1,0 +1,17 @@
+{
+  "schema_version": "v0",
+  "case_id": "missing-staleness-section-v0",
+  "task_id": "missing-staleness-section-v0-task",
+  "workflow_id": "pcs.scientific_memory",
+  "case_kind": "missing_staleness_section",
+  "input_artifacts": {
+    "release_dir": "input_artifacts/"
+  },
+  "expected_status": "Rejected",
+  "expected_failure_code": "missing_rendered_section",
+  "expected_responsible_component": "scientific_memory",
+  "expected_repair_hint_kind": null,
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+}

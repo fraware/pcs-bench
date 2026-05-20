@@ -2,12 +2,39 @@ suite_id: tool-use-safety-v0
 workflow_id: agent_tool_use.safety_v0
 domain: agent_safety
 description: Benchmarks ToolUseCertificate.v0 profiles, PF admission, and failure localization.
+live_required_for_release: false
+
+required_metrics:
+  - failure_localization_accuracy
+  - repair_hint_quality_score
+  - certificate_completeness_score
+
+optional_metrics:
+  - formal_check_coverage_score
+  - scientific_memory_interpretability_score
+  - cross_domain_portability_score
 
 cases:
   - case_id: tool-use-valid-v0
     path: valid/tool-use-valid-v0/benchmark_case.v0.json
+  - case_id: tool-use-unauthorized-tool-call-v0
+    path: invalid/unauthorized_tool_call/benchmark_case.v0.json
+  - case_id: tool-use-missing-policy-hash-v0
+    path: invalid/missing_policy_hash/benchmark_case.v0.json
+  - case_id: tool-use-unknown-authorization-status-v0
+    path: invalid/unknown_authorization_status/benchmark_case.v0.json
   - case_id: tool-use-policy-hash-mismatch-v0
     path: invalid/policy_hash_mismatch/benchmark_case.v0.json
+  - case_id: tool-use-tool-trace-hash-mismatch-v0
+    path: invalid/tool_trace_hash_mismatch/benchmark_case.v0.json
+  - case_id: tool-use-rejected-tool-certificate-v0
+    path: invalid/rejected_tool_certificate/benchmark_case.v0.json
+  - case_id: tool-use-wrong-admission-profile-v0
+    path: invalid/wrong_admission_profile/benchmark_case.v0.json
+  - case_id: tool-use-missing-tool-use-certificate-v0
+    path: invalid/missing_tool_use_certificate/benchmark_case.v0.json
+  - case_id: tool-use-missing-handoff-v0
+    path: invalid/missing_handoff/benchmark_case.v0.json
 
 metrics:
   - failure_localization_accuracy

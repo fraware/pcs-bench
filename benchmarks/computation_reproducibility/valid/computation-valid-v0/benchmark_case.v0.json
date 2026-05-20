@@ -1,12 +1,17 @@
 {
   "schema_version": "v0",
   "case_id": "computation-valid-v0",
-  "task_id": "computation-reproducibility-v0",
+  "task_id": "computation-valid-v0-task",
   "workflow_id": "scientific_computation.reproducibility_v0",
-  "case_kind": "valid_release",
-  "input_artifacts": { "release_dir": "input_artifacts/" },
+  "case_kind": "valid_computation",
+  "input_artifacts": {
+    "release_dir": "input_artifacts/"
+  },
   "expected_status": "Admitted",
-  "source_repo": "https://github.com/fraware/CertifyEdge",
+  "expected_failure_code": null,
+  "expected_responsible_component": null,
+  "expected_repair_hint_kind": null,
+  "source_repo": "https://github.com/fraware/pcs-bench",
   "source_commit": "placeholder",
-  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
 }

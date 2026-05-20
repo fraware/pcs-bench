@@ -1,0 +1,6 @@
+{
+  "schema_version": "v0",
+  "claim_id": "failed-release-rendering-v0",
+  "workflow_id": "pcs.scientific_memory",
+  "status": "Rejected"
+}

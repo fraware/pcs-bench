@@ -1,16 +1,42 @@
 suite_id: computation-reproducibility-v0
 workflow_id: scientific_computation.reproducibility_v0
 domain: scientific_computation
-description: Benchmarks ComputationWitness.v0 and reproducibility admission.
+description: Benchmarks computation witnesses, environment digests, and reproducibility failures.
+live_required_for_release: false
+
+required_metrics:
+  - release_reproducibility_score
+  - failure_localization_accuracy
+  - repair_hint_quality_score
+
+optional_metrics:
+  - formal_check_coverage_score
+  - scientific_memory_interpretability_score
 
 cases:
   - case_id: computation-valid-v0
     path: valid/computation-valid-v0/benchmark_case.v0.json
+  - case_id: computation-dataset-hash-mismatch-v0
+    path: invalid/dataset_hash_mismatch/benchmark_case.v0.json
+  - case_id: computation-environment-digest-mismatch-v0
+    path: invalid/environment_digest_mismatch/benchmark_case.v0.json
   - case_id: computation-result-hash-mismatch-v0
     path: invalid/result_hash_mismatch/benchmark_case.v0.json
+  - case_id: computation-missing-code-commit-v0
+    path: invalid/missing_code_commit/benchmark_case.v0.json
+  - case_id: computation-nonzero-exit-code-v0
+    path: invalid/nonzero_exit_code/benchmark_case.v0.json
+  - case_id: computation-missing-result-artifact-v0
+    path: invalid/missing_result_artifact/benchmark_case.v0.json
+  - case_id: computation-rejected-computation-witness-v0
+    path: invalid/rejected_computation_witness/benchmark_case.v0.json
+  - case_id: computation-wrong-admission-profile-v0
+    path: invalid/wrong_admission_profile/benchmark_case.v0.json
+  - case_id: computation-missing-lean-check-result-v0
+    path: invalid/missing_lean_check_result/benchmark_case.v0.json
 
 metrics:
   - release_reproducibility_score
-  - certificate_completeness_score
   - failure_localization_accuracy
   - repair_hint_quality_score
+  - registry_coverage_score

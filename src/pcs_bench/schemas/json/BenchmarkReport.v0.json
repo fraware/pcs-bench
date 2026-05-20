@@ -3,21 +3,55 @@
   "$id": "https://pcs.dev/schemas/BenchmarkReport.v0.json",
   "title": "BenchmarkReport.v0",
   "type": "object",
-  "required": ["schema_version", "report_id", "benchmark_suite_id", "started_at", "runs", "metrics"],
+  "required": [
+    "schema_version",
+    "report_id",
+    "benchmark_suite_id",
+    "started_at",
+    "runs",
+    "metrics",
+    "summary",
+    "coverage",
+    "failures",
+    "source_repo",
+    "source_commit",
+    "signature_or_digest"
+  ],
   "properties": {
     "schema_version": { "const": "v0" },
-    "report_id": { "type": "string" },
-    "benchmark_suite_id": { "type": "string" },
+    "report_id": { "type": "string", "minLength": 1 },
+    "benchmark_suite_id": { "type": "string", "minLength": 1 },
     "started_at": { "type": "string" },
     "completed_at": { "type": ["string", "null"] },
-    "repo_commits": { "type": "object" },
+    "source_repo": { "type": "string", "minLength": 1 },
+    "source_commit": { "type": "string", "minLength": 1 },
+    "signature_or_digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" },
     "runs": { "type": "array" },
-    "metrics": { "type": "object" },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          { "type": "number", "minimum": 0, "maximum": 1 },
+          {
+            "type": "object",
+            "required": ["score", "applicability"],
+            "properties": {
+              "score": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+              "applicability": {
+                "type": "string",
+                "enum": ["measured", "not_applicable", "insufficient_cases", "skipped", "failed_to_measure"]
+              },
+              "reason": { "type": "string" }
+            }
+          }
+        ]
+      }
+    },
     "metric_summaries": { "type": "array" },
     "summary": { "type": "object" },
     "coverage": { "type": "object" },
     "failures": { "type": "array" },
-    "signature_or_digest": { "type": ["string", "null"] },
+    "repo_commits": { "type": "object" },
     "dry_run": { "type": "boolean" }
   },
   "additionalProperties": true

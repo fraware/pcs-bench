@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "missing_tool_use_certificate",
+  "responsible_component": "certificate_producer",
+  "repair_hint_kind": "issue_tool_use_certificate"
+}

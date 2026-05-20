@@ -1,0 +1,17 @@
+{
+  "schema_version": "v0",
+  "case_id": "computation-missing-lean-check-result-v0",
+  "task_id": "computation-missing-lean-check-result-v0-task",
+  "workflow_id": "scientific_computation.reproducibility_v0",
+  "case_kind": "missing_lean_check_result",
+  "input_artifacts": {
+    "release_dir": "input_artifacts/"
+  },
+  "expected_status": "Rejected",
+  "expected_failure_code": "missing_lean_check_result",
+  "expected_responsible_component": "formal_kernel",
+  "expected_repair_hint_kind": "run_lean_check",
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "placeholder",
+  "signature_or_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+}

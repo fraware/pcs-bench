@@ -1,0 +1,23 @@
+{
+  "schema_version": "v0",
+  "artifacts": [
+    {
+      "artifact_id": "runtime_trace",
+      "producer": "runtime_producer",
+      "checked": true,
+      "hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "artifact_id": "trace_certificate",
+      "producer": "certificate_producer",
+      "checked": true,
+      "hash": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "artifact_id": "science_claim_bundle",
+      "producer": "verifier",
+      "checked": true,
+      "hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ]
+}

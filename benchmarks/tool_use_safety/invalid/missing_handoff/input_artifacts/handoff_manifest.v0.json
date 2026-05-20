@@ -1,0 +1,9 @@
+{
+  "schema_version": "v0",
+  "handoff_id": "handoff-tool-use-missing-handoff-v0",
+  "workflow_id": "agent_tool_use.safety_v0",
+  "artifacts": [
+    "runtime_trace",
+    "trace_certificate"
+  ]
+}

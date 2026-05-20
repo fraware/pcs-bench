@@ -2,6 +2,7 @@
 
 from pcs_bench.metrics import (
     compute_failure_localization_accuracy,
+    compute_formal_check_coverage_score,
     compute_release_reproducibility_score,
     compute_repair_hint_quality_score,
 )
@@ -54,6 +55,15 @@ def test_failure_localization_accuracy():
     assert m.score == 0.5
     assert m.numerator == 1
     assert m.denominator == 2
+
+
+def test_formal_check_insufficient_without_formal_cases():
+    runs = [
+        _run("t1", "Admitted", "Admitted", passed=True),
+    ]
+    m = compute_formal_check_coverage_score(runs)
+    assert m.score is None
+    assert m.applicability == "insufficient_cases"
 
 
 def test_repair_hint_quality():

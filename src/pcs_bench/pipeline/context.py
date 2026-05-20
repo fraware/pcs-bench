@@ -52,6 +52,7 @@ class CaseExecutionContext:
     claim_id: str | None = None
     skip_external: bool = False
     stage_notes: dict[str, str] = field(default_factory=dict)
+    used_simulation_fallback: bool = False
 
     def record(self, result: CommandResult) -> None:
         self.commands.append(result)

@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "missing_result_artifact",
+  "responsible_component": "runtime_producer",
+  "repair_hint_kind": "emit_result_artifact"
+}

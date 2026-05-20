@@ -20,7 +20,16 @@ runtime evidence
 |------|------|----------|
 | Simulate | `--simulate` (default) | Fixture sidecars + artifact analysis; no CLIs required |
 | Live | `--live` | Invokes pcs, labtrust, certifyedge, pf, just |
+| Hybrid | `--hybrid` | Live first; fixture fallback when CLIs exit 127 |
 | Dry-run | `--dry-run` | Planning only; fastest |
+
+Suites may set `live_required_for_release: true` (LabTrust). CI with `--ci` fails if such suites run with zero `live_cases`.
+
+## Release gate
+
+`pcs-bench gate` runs: materialize fixtures → fixture manifest verify → validate cases → benchmark with `--ci` → `validate-report` → export packet → `verify-packet`.
+
+GitHub Actions runs the same simulate gate on every PR; optional workflow dispatch runs the LabTrust live gate when sibling repos are available.
 
 ## Pipeline
 
@@ -36,7 +45,7 @@ Each stage records commands in `CaseExecutionContext` and writes `artifact_analy
 
 | Module | Responsibility |
 |--------|----------------|
-| `cli.py` | Typer CLI: run, report, compare, validate-cases, explain, check-adapters, list-suites |
+| `cli.py` | Typer CLI: run, gate, report, compare, validate-cases, validate-report, verify-packet, sync-schemas, explain, check-adapters |
 | `pipeline/` | Declarative evaluation stages |
 | `artifacts.py` | Certificate, registry, and rendering completeness analysis |
 | `simulation.py` | Expected sidecar loading for offline evaluation |

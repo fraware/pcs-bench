@@ -1,0 +1,6 @@
+{
+  "status": "Rejected",
+  "failure_code": "dataset_hash_mismatch",
+  "responsible_component": "runtime_producer",
+  "repair_hint_kind": "pin_dataset_version"
+}

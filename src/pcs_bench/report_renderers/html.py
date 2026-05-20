@@ -33,12 +33,29 @@ def render_html(
     mode = report.summary.get("execution_mode", "n/a")
 
     metric_rows = ""
-    for name, score in sorted(report.metrics.items()):
-        thr = thresholds.get(name, 0.9)
-        metric_rows += f"""
+    summaries = report.metric_summaries or []
+    if summaries:
+        for summary in sorted(summaries, key=lambda s: s.name):
+            thr = thresholds.get(summary.name, 0.9)
+            score_txt = f"{summary.score:.3f}" if summary.score is not None else "n/a"
+            cls = _metric_class(summary.score, thr) if summary.score is not None else ""
+            metric_rows += f"""
+        <tr>
+          <td>{html.escape(summary.name)}</td>
+          <td class="{cls}">{score_txt}</td>
+          <td>{html.escape(summary.applicability)}</td>
+          <td>{_pct(thr)}</td>
+        </tr>"""
+    else:
+        for name, score in sorted(report.metrics.items()):
+            if not isinstance(score, (int, float)):
+                continue
+            thr = thresholds.get(name, 0.9)
+            metric_rows += f"""
         <tr>
           <td>{html.escape(name)}</td>
           <td class="{_metric_class(score, thr)}">{score:.3f}</td>
+          <td>measured</td>
           <td>{_pct(thr)}</td>
         </tr>"""
 
@@ -147,7 +164,7 @@ def render_html(
     <section>
       <h2>Metric summary</h2>
       <table>
-        <thead><tr><th>Metric</th><th>Score</th><th>Threshold</th></tr></thead>
+        <thead><tr><th>Metric</th><th>Score</th><th>Applicability</th><th>Threshold</th></tr></thead>
         <tbody>{metric_rows}</tbody>
       </table>
     </section>

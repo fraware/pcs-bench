@@ -153,6 +153,7 @@ def run_case_pipeline(
 
     # Hybrid: if live CLIs unavailable, fall back to fixture simulation
     if mode == ExecutionMode.HYBRID and _all_cli_missing(ctx):
+        ctx.used_simulation_fallback = True
         ctx.observed = ObservedOutcome()
         stage_apply_simulation(ctx)
         stage_infer_from_commands(ctx)
@@ -242,4 +243,15 @@ def run_case_pipeline(
         passed=passed,
         first_failing_command=first_fail,
         responsible_repo=responsible_repo(component),
+        execution_kind=_execution_kind(mode, ctx),
     )
+
+
+def _execution_kind(mode: ExecutionMode, ctx: CaseExecutionContext) -> str:
+    if ctx.used_simulation_fallback:
+        return "hybrid_fallback"
+    if mode == ExecutionMode.LIVE:
+        return "live"
+    if mode == ExecutionMode.DRY_RUN:
+        return "dry_run"
+    return "simulate"
