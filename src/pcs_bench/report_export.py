@@ -64,10 +64,30 @@ def _summary_scores(report: BenchmarkReport) -> dict[str, float]:
     return scores
 
 
+def _is_pcs_core_coverage_entry(value: Any) -> bool:
+    """True when value is a producer CoverageReport.v0 or ExplainQualityReport.v0 object."""
+    if not isinstance(value, dict) or value.get("schema_version") != "v0":
+        return False
+    return "coverage_id" in value or "report_id" in value or "workflow_profile_id" in value
+
+
 def _export_coverage_block(report: BenchmarkReport) -> dict[str, Any]:
-    """pcs-core coverage block uses CoverageReport.v0 refs; harness aggregates stay internal."""
-    _ = report
-    return {}
+    """Export pcs-core coverage block; omit harness-only aggregate dicts."""
+    coverage = report.coverage or {}
+    allowed = {
+        "registry",
+        "formal_checks",
+        "scientific_memory",
+        "release_reproducibility",
+        "certificate_completeness",
+        "explain_quality",
+        "profile_coverage",
+    }
+    return {
+        key: value
+        for key, value in coverage.items()
+        if key in allowed and _is_pcs_core_coverage_entry(value)
+    }
 
 
 def _build_pcs_summary(report: BenchmarkReport) -> dict[str, Any]:
@@ -212,32 +232,37 @@ def _export_run_record(
     rel_dir.mkdir(parents=True, exist_ok=True)
     run_path = rel_dir / f"benchmark_run.{run.case_id}.v0.json"
     bench_status = benchmark_status_for_run(run.passed)
+    if bench_status not in ("passed", "failed", "skipped", "error"):
+        bench_status = "passed" if run.passed else "failed"
     started = datetime.now(timezone.utc).isoformat()
-    run_doc = {
+    system_outcome = run.observed_system_outcome or ""
+    if system_outcome in ("admitted", "rejected"):
+        admission = system_outcome
+    elif bench_status == "passed":
+        admission = "admitted"
+    else:
+        admission = "rejected"
+
+    run_doc: dict[str, Any] = {
         "schema_version": "v0",
         "run_id": run.run_id,
         "task_id": run.task_id or run.case_id,
         "case_id": run.case_id,
-        "suite_id": run.suite_id,
-        "expected_status": run.expected_status,
-        "expected_system_outcome": run.expected_system_outcome,
-        "expected_failure_code": run.expected_failure_code or "",
-        "benchmark_passed": run.passed,
         "started_at": started,
         "completed_at": started,
         "commands": [
             {
-                "command": " ".join(c.command),
+                "command": " ".join(c.command) if isinstance(c.command, list) else str(c.command),
                 "exit_code": c.exit_code,
             }
             for c in run.commands[:50]
         ],
         "artifacts_produced": [a for a in run.artifacts if a][:100],
         "observed_status": bench_status,
-        "observed_system_outcome": run.observed_system_outcome or "",
-        "observed_failure_code": run.observed_failure_code or "",
-        "observed_responsible_component": run.observed_responsible_component or "unknown",
-        "observed_repair_hint": run.observed_repair_hint or "unknown",
+        "observed_failure_code": run.observed_failure_code,
+        "observed_responsible_component": run.observed_responsible_component,
+        "observed_repair_hint": run.observed_repair_hint,
+        "system_admission_outcome": admission,
         "duration_ms": run.duration_ms,
         "source_repo": source_repo,
         "source_commit": source_commit,

@@ -1,0 +1,28 @@
+{
+  "schema_version": "v0",
+  "run_id": "bench-run-labtrust-valid-release-v0",
+  "task_id": "labtrust-qc-release-v0",
+  "case_id": "labtrust-valid-release-v0",
+  "started_at": "2026-05-21T18:06:32.033912+00:00",
+  "completed_at": "2026-05-21T18:06:32.033912+00:00",
+  "commands": [
+    {
+      "command": "evaluate_labtrust_gallery benchmarks/labtrust-qc-release/valid/labtrust-valid-release-v0/input_artifacts",
+      "exit_code": 0
+    }
+  ],
+  "artifacts_produced": [
+    "manifest.json",
+    "trace_certificate.json",
+    "reports/.gate-producer-scratch/artifact_refs/valid_labtrust-valid-release-v0_benchmark_run.labtrust-valid-release-v0.v0.json"
+  ],
+  "observed_status": "failed",
+  "observed_failure_code": null,
+  "observed_responsible_component": null,
+  "observed_repair_hint": null,
+  "system_admission_outcome": "rejected",
+  "duration_ms": 167,
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "2ee816754ef846df47a4eb1805d1cd0e3ae6eea8",
+  "signature_or_digest": "sha256:91e3c5f5a191f08a469e940112e485fb3a3de64b776b3fb5db65214d8749aa2c"
+}

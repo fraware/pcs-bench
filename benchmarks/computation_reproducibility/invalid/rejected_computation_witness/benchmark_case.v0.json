@@ -13,6 +13,6 @@
   "expected_responsible_component": "verifier",
   "expected_repair_hint_kind": "rerun_verification",
   "source_repo": "https://github.com/fraware/pcs-bench",
-  "source_commit": "bb5d083dff2bb1060e88a5e643b46c0894947e05",
+  "source_commit": "2ee816754ef846df47a4eb1805d1cd0e3ae6eea8",
   "signature_or_digest": "sha256:a0944d2c7c924ef5e149358ec9a84e08c0211ad8a679c2ae5d7ae87bc4209bbb"
 }

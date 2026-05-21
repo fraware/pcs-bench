@@ -1,0 +1,65 @@
+{
+  "schema_version": "v0",
+  "producer_id": "labtrust-gym",
+  "suite_id": "labtrust-qc-release-v0",
+  "workflow_id": "hospital_lab.qc_release",
+  "benchmark_runs": [
+    {
+      "schema_version": "v0",
+      "run_id": "bench-run-labtrust-valid-release-v0",
+      "task_id": "labtrust-qc-release-v0",
+      "case_id": "labtrust-valid-release-v0",
+      "started_at": "2026-05-21T12:02:01Z",
+      "completed_at": "2026-05-21T12:02:01Z",
+      "commands": [
+        {
+          "command": "evaluate_labtrust_gallery benchmarks/labtrust-qc-release/valid/labtrust-valid-release-v0/input_artifacts",
+          "exit_code": 0
+        }
+      ],
+      "artifacts_produced": [
+        "manifest.json",
+        "trace_certificate.json"
+      ],
+      "observed_status": "passed",
+      "observed_failure_code": null,
+      "observed_responsible_component": null,
+      "observed_repair_hint": null,
+      "system_admission_outcome": "not_evaluated",
+      "release_chain_status": "valid",
+      "certificate_status": "CertificateChecked",
+      "scientific_memory_import_status": "not_applicable",
+      "scientific_memory_render_status": "not_applicable",
+      "duration_ms": 167,
+      "source_repo": "https://github.com/SentinelOps-CI/pcs-core",
+      "source_commit": "d444444444444444444444444444444444444444",
+      "signature_or_digest": "sha256:be7ca1bad9f9545476abd4f403f13e76afc6003c8503ac5ed4badc84fc16f51e"
+    }
+  ],
+  "coverage_reports": [],
+  "failure_localization_reports": [],
+  "explain_quality_reports": [],
+  "profile_coverage_reports": [],
+  "commands": [
+    {
+      "command": "labtrust_benchmark_case labtrust-valid-release-v0",
+      "exit_code": 0
+    }
+  ],
+  "logs": [],
+  "source_repo": "https://github.com/fraware/LabTrust-Gym",
+  "source_commit": "5eac714fd7dc813d2523febcb85c56821558a1b7",
+  "signature_or_digest": "sha256:3984b18205fc64f3e33437e7b240387eed75e9ae9e173fff7d7aa63a4b07fa1d",
+  "artifact_refs": [
+    {
+      "schema_version": "v0",
+      "artifact_type": "BenchmarkRun.v0",
+      "path": "valid/labtrust-valid-release-v0/benchmark_run.labtrust-valid-release-v0.v0.json",
+      "sha256": "sha256:be7ca1bad9f9545476abd4f403f13e76afc6003c8503ac5ed4badc84fc16f51e",
+      "role": "producer_export",
+      "source_repo": "https://github.com/fraware/LabTrust-Gym",
+      "source_commit": "5eac714fd7dc813d2523febcb85c56821558a1b7",
+      "signature_or_digest": "sha256:eb3da48e89ef19a07e7579f51e22d35f84bcd8fb688a0c2395a0bc58eb209c1f"
+    }
+  ]
+}

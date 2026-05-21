@@ -1,0 +1,10 @@
+{
+  "schema_version": "v0",
+  "artifact_type": "BenchmarkRun.v0",
+  "path": "valid/labtrust-valid-release-v0/benchmark_run.labtrust-valid-release-v0.v0.json",
+  "sha256": "sha256:be7ca1bad9f9545476abd4f403f13e76afc6003c8503ac5ed4badc84fc16f51e",
+  "role": "producer_export",
+  "source_repo": "https://github.com/fraware/LabTrust-Gym",
+  "source_commit": "5eac714fd7dc813d2523febcb85c56821558a1b7",
+  "signature_or_digest": "sha256:eb3da48e89ef19a07e7579f51e22d35f84bcd8fb688a0c2395a0bc58eb209c1f"
+}

@@ -1,0 +1,102 @@
+{
+  "schema_version": "v0",
+  "report_id": "pcs-bench-report-f7d2fd4e111c",
+  "benchmark_suite_id": "scientific-memory-rendering-v0",
+  "runs": [],
+  "metrics": [
+    "scientific_memory_interpretability_score"
+  ],
+  "metric_summaries": [
+    {
+      "name": "scientific_memory_interpretability_score",
+      "applicability": "measured",
+      "score": 1.0,
+      "reason": "explain_quality:valid-scientific-memory-import"
+    }
+  ],
+  "summary": {
+    "total_cases": 0,
+    "passed_cases": 0,
+    "failed_cases": 0,
+    "expected_failures_detected": 0,
+    "unexpected_passes": 0,
+    "unexpected_failures": 0,
+    "failure_localization_accuracy": 0.0,
+    "repair_hint_accuracy": 0.0,
+    "formal_check_coverage": 0.0,
+    "registry_coverage": 0.0,
+    "scientific_memory_render_coverage": 1.0,
+    "execution_mode": "simulate",
+    "evidence_grade": "developer",
+    "live_cases": 0,
+    "simulated_cases": 1,
+    "hybrid_fallback_cases": 0,
+    "scientific_memory_interpretability_score": 1.0
+  },
+  "coverage": {
+    "explain_quality": {
+      "schema_version": "v0",
+      "report_id": "sm-render-benchmark-v0",
+      "suite_id": "scientific-memory-rendering-v0",
+      "case_id": "valid-scientific-memory-import",
+      "producer_id": "scientific-memory",
+      "workflow_id": "labtrust.qc_release_v0.1",
+      "required_sections": [
+        "provenance",
+        "hashes",
+        "handoffs",
+        "verification",
+        "formal_checks",
+        "limitations",
+        "lineage",
+        "repair_hints"
+      ],
+      "sections": {
+        "provenance": {
+          "present": true,
+          "score": 1.0
+        },
+        "hashes": {
+          "present": true,
+          "score": 1.0
+        },
+        "handoffs": {
+          "present": true,
+          "score": 1.0
+        },
+        "verification": {
+          "present": true,
+          "score": 1.0
+        },
+        "formal_checks": {
+          "present": true,
+          "score": 1.0
+        },
+        "limitations": {
+          "present": true,
+          "score": 1.0
+        },
+        "lineage": {
+          "present": true,
+          "score": 1.0
+        },
+        "repair_hints": {
+          "present": true,
+          "score": 1.0
+        }
+      },
+      "sections_present_count": 8,
+      "sections_required_count": 8,
+      "quality_score": 1.0,
+      "gaps": [],
+      "source_repo": "https://github.com/fraware/scientific-memory",
+      "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+      "signature_or_digest": "sha256:be7600a500877fb925e4033f461e49d669aad153a8a852f7f76ac7f82f37be0e"
+    }
+  },
+  "failures": [],
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "2ee816754ef846df47a4eb1805d1cd0e3ae6eea8",
+  "signature_or_digest": "sha256:3c002e55e9a3d627bc75493b8f53f09c3b8ade38fc06a693872b2d379e8a3b35",
+  "producer_id": "pcs-bench"
+}

@@ -8,13 +8,14 @@ make ci
 pcs-bench run --suite all --simulate --ci --out reports/ci.json
 pcs-bench validate-report --input reports/ci.json
 pcs-bench packet --report reports/ci.json --out packets/latest
-pcs-bench verify-packet --packet packets/latest
+pcs-bench verify-packet --packet packets/latest --reproduce-smoke
+pcs-bench validate-producer-fixtures --pcs-core ../pcs-core
 ```
 
 One-shot local gate:
 
 ```bash
-pcs-bench gate
+pcs-bench gate --reproduce-smoke
 ```
 
 ## Failure conditions
@@ -54,7 +55,8 @@ FAILED: Required metric formal_check_coverage_score was not measured (insufficie
 5. `pcs-bench validate-report --input reports/ci.json`
 6. `pcs-bench report --input reports/ci.json --format markdown --out reports/ci.md`
 7. `pcs-bench packet --report reports/ci.json --out packets/latest`
-8. `pcs-bench verify-packet --packet packets/latest`
-9. Optionally `pcs-bench compare --old reports/baseline.json --new reports/ci.json`
+8. `pcs-bench verify-packet --packet packets/latest --reproduce-smoke`
+9. `pcs-bench validate-producer-fixtures` (or rely on `gate`, which runs this step)
+10. Optionally `pcs-bench compare --old reports/baseline.json --new reports/ci.json`
 
 See [Live release gate](live-gate.md) for `--live --ci` on LabTrust.

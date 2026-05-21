@@ -109,6 +109,12 @@ def export_benchmark_packet(
     _write_repo_commits(report, out_dir / "repo_commits.json")
     (out_dir / "limitations.md").write_text(_limitations_md(report), encoding="utf-8")
     (out_dir / "README.md").write_text(_reviewer_readme(report, out_dir), encoding="utf-8")
+    explain = (report.coverage or {}).get("explain_quality")
+    if isinstance(explain, dict):
+        (out_dir / "explain_quality.json").write_text(
+            json.dumps(explain, indent=2),
+            encoding="utf-8",
+        )
     _write_reproduce_script(out_dir)
 
     meta = {
@@ -124,7 +130,12 @@ def export_benchmark_packet(
     return out_dir
 
 
-def verify_benchmark_packet(packet_dir: Path, config: BenchConfig | None = None) -> PacketVerificationResult:
+def verify_benchmark_packet(
+    packet_dir: Path,
+    config: BenchConfig | None = None,
+    *,
+    reproduce_smoke: bool = False,
+) -> PacketVerificationResult:
     """Verify packet structure and that valid/invalid fixtures are reproducible."""
     cfg = config or BenchConfig()
     packet_dir = packet_dir.resolve()
@@ -169,7 +180,108 @@ def verify_benchmark_packet(packet_dir: Path, config: BenchConfig | None = None)
                     result.errors.append(f"benchmark_case.v0.json missing under {rel}")
                     result.valid = False
 
+    if reproduce_smoke and result.valid:
+        _verify_reproduce_smoke(packet_dir, result)
+
     return result
+
+
+def _verify_reproduce_smoke(packet_dir: Path, result: PacketVerificationResult) -> None:
+    """Re-run lightweight reproduction checks bundled in the packet."""
+    from pcs_bench.benchmark_vocabulary import BENCHMARK_FAILED, BENCHMARK_PASSED
+    from pcs_bench.cases import load_case
+    from pcs_bench.metrics_definitions import REQUIRED_MEMORY_SECTIONS
+    from pcs_bench.simulation import load_expected_sidecar, simulate_outcome
+
+    manifest_path = packet_dir / "case_manifest.json"
+    if not manifest_path.exists():
+        result.errors.append("reproduce-smoke: case_manifest.json missing")
+        result.valid = False
+        return
+
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    valid_entry = next(
+        (c for c in manifest if c.get("expected_status") == BENCHMARK_PASSED),
+        None,
+    )
+    invalid_entry = next(
+        (c for c in manifest if c.get("expected_status") == BENCHMARK_FAILED),
+        None,
+    )
+    if not valid_entry or not invalid_entry:
+        result.errors.append("reproduce-smoke: need one valid and one invalid case in manifest")
+        result.valid = False
+        return
+
+    for label, entry in (("valid", valid_entry), ("invalid", invalid_entry)):
+        rel = entry.get("fixture_path")
+        if not rel:
+            result.errors.append(f"reproduce-smoke: {label} case missing fixture_path")
+            result.valid = False
+            continue
+        case_root = packet_dir / rel
+        case_json = case_root / "benchmark_case.v0.json"
+        if not case_json.exists():
+            result.errors.append(f"reproduce-smoke: {label} case missing benchmark_case.v0.json")
+            result.valid = False
+            continue
+        case = load_case(case_json)
+        outcome = simulate_outcome(case, case_root)
+        expected_pass = entry.get("expected_status") == BENCHMARK_PASSED
+        if expected_pass and outcome.system_outcome != (case.expected_system_outcome or "admitted"):
+            result.errors.append(
+                f"reproduce-smoke: valid case {case.case_id} did not reproduce admitted outcome"
+            )
+            result.valid = False
+        if not expected_pass and outcome.system_outcome not in ("rejected", "stale", "unknown"):
+            if outcome.system_outcome == "admitted":
+                result.errors.append(
+                    f"reproduce-smoke: invalid case {case.case_id} unexpectedly admitted"
+                )
+                result.valid = False
+
+    explain_path = packet_dir / "explain_quality.json"
+    report_path = packet_dir / "BenchmarkReport.v0.json"
+    explain_doc: dict | None = None
+    if explain_path.exists():
+        explain_doc = json.loads(explain_path.read_text(encoding="utf-8"))
+    elif report_path.exists():
+        report_data = json.loads(report_path.read_text(encoding="utf-8"))
+        explain_doc = (report_data.get("coverage") or {}).get("explain_quality")
+
+    if not explain_doc:
+        result.errors.append("reproduce-smoke: explain_quality report missing")
+        result.valid = False
+    else:
+        from pcs_bench.validation.schema_loader import validate_instance
+
+        pcs_root = Path(__file__).resolve().parent
+        explain_errors = validate_instance(explain_doc, "ExplainQualityReport.v0", pcs_root)
+        for err in explain_errors:
+            result.errors.append(f"reproduce-smoke explain_quality: {err}")
+            result.valid = False
+
+    render_case = next(
+        (
+            c
+            for c in manifest
+            if (packet_dir / str(c.get("fixture_path", "")) / "expected" / "rendered_sections.json").exists()
+        ),
+        None,
+    )
+    if not render_case:
+        result.errors.append("reproduce-smoke: no Scientific Memory rendering fixture in packet")
+        result.valid = False
+    else:
+        rel = render_case["fixture_path"]
+        rendered = load_expected_sidecar(packet_dir / rel, "rendered_sections.json")
+        sections = rendered.get("sections") or rendered.get("rendered_sections") or []
+        missing = [s for s in REQUIRED_MEMORY_SECTIONS if s not in sections]
+        if missing:
+            result.errors.append(
+                f"reproduce-smoke: rendering case missing sections {missing}"
+            )
+            result.valid = False
 
 
 def _export_command_history(report: BenchmarkReport, dest: Path) -> None:

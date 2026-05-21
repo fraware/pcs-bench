@@ -53,8 +53,20 @@ pcs-bench list-suites
 # Strict BenchmarkReport.v0 validation (pcs-core schema)
 pcs-bench validate-report --input reports/ci.json --pcs-core ../pcs-core
 
+# Validate producer PcsBenchIngest.v0
+pcs-bench validate-ingest --input ../CertifyEdge/benchmark_runs/tool_use_safety/pcs_bench_ingest.v0.json --pcs-core ../pcs-core
+
 # Normalize producer-native benchmark output
-pcs-bench ingest-producer-output --producer certifyedge --input ../CertifyEdge/benchmark_runs/tool_use_safety --out reports/certifyedge-normalized.json
+pcs-bench ingest-producer-output --producer certifyedge --input ../CertifyEdge/benchmark_runs/tool_use_safety/pcs_bench_ingest.v0.json --out reports/certifyedge.normalized.json
+
+# Gate with producer benchmarks (live)
+pcs-bench gate --suite all --live --run-producer-benchmarks --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory
+
+# Verify packet with reproduction smoke checks
+pcs-bench verify-packet --packet packets/latest --reproduce-smoke
+
+# Validate all offline producer ingest fixtures (CI-safe)
+pcs-bench validate-producer-fixtures --pcs-core ../pcs-core
 
 # Release-grade evidence (live adapters required for live_required suites)
 pcs-bench run --suite all --live --ci --out reports/release.json

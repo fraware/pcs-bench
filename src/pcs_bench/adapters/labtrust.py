@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pcs_bench.adapters.base import AdapterStatus, CommandResult, RepoAdapter
+from pcs_bench.adapters.base import AdapterStatus, CommandResult, RepoAdapter, resolve_executable
 from pcs_bench.config import BenchConfig
 
 
@@ -15,7 +15,7 @@ class LabTrustAdapter(RepoAdapter):
         super().__init__(repo_path, config)
 
     def _binary(self) -> str:
-        return self.config.commands.labtrust
+        return resolve_executable(self.config.commands.labtrust)
 
     def regenerate_release_protocol(self, out_dir: Path) -> CommandResult:
         return self.run(

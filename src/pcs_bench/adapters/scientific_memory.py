@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from pcs_bench.adapters.base import AdapterStatus, CommandResult, RepoAdapter
+from pcs_bench.adapters.base import AdapterStatus, CommandResult, RepoAdapter, resolve_executable
 from pcs_bench.config import BenchConfig
 
 
@@ -16,7 +16,7 @@ class ScientificMemoryAdapter(RepoAdapter):
         super().__init__(repo_path, config)
 
     def _binary(self) -> str:
-        return self.config.commands.just
+        return resolve_executable(self.config.commands.just)
 
     def _run_just(self, recipe: str, env_vars: dict[str, str]) -> CommandResult:
         env = {**os.environ, **env_vars}

@@ -1,0 +1,10 @@
+{
+  "schema_version": "v0",
+  "artifact_type": "ExplainQualityReport.v0",
+  "path": "benchmarks/rendering/explain_quality_report.sm-render-benchmark-v0.v0.json",
+  "sha256": "sha256:be7600a500877fb925e4033f461e49d669aad153a8a852f7f76ac7f82f37be0e",
+  "role": "producer_export",
+  "source_repo": "https://github.com/fraware/scientific-memory",
+  "source_commit": "0e059e934bc95bcc4dc0cb6593b18b07a28529a2",
+  "signature_or_digest": "sha256:a0b626cb8358013737947fe3252c66d00559da67ce7ceb68113e62b30309f941"
+}

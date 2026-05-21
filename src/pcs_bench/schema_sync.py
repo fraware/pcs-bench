@@ -31,6 +31,8 @@ SCHEMA_NAMES = (
     "BenchmarkCase.v0",
     "BenchmarkSuite.v0",
     "FailureLocalization.v0",
+    "PcsBenchIngest.v0",
+    "BenchmarkRun.v0",
 )
 
 # Copied by filename (not Benchmark*.v0 naming) for $ref resolution offline.
@@ -39,6 +41,10 @@ AUX_SCHEMA_FILES = (
     "CoverageReport.v0.schema.json",
     "ExplainQualityReport.v0.schema.json",
     "ProfileCoverageReport.v0.schema.json",
+    "PcsBenchIngest.v0.schema.json",
+    "BenchmarkRun.v0.schema.json",
+    "FailureLocalizationResult.v0.schema.json",
+    "BenchmarkArtifactRef.v0.schema.json",
 )
 
 
@@ -115,6 +121,9 @@ def sync_schemas_from_pcs_core(
             continue
         shutil.copy2(source, dest_dir / filename)
         result.copied.append(filename)
+        if filename == "PcsBenchIngest.v0.schema.json":
+            shutil.copy2(source, dest_dir / "PcsBenchIngest.v0.json")
+            result.copied.append("PcsBenchIngest.v0.json")
 
     report_path = dest_dir / "BenchmarkReport.v0.json"
     if ensure_benchmark_report_metric_summary_inline(report_path):

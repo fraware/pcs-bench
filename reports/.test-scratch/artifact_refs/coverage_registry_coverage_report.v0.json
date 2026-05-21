@@ -1,0 +1,10 @@
+{
+  "schema_version": "v0",
+  "artifact_type": "CoverageReport.v0",
+  "path": "coverage/registry_coverage_report.v0.json",
+  "sha256": "sha256:a61d1caeb0cd5998991d0efd1a69a8fee91263be3ae2301241fbb90e1eb49fd6",
+  "role": "producer_export",
+  "source_repo": "https://github.com/SentinelOps-CI/provability-fabric",
+  "source_commit": "3294f92bb44873db0c0b0246a258a8e1cbd55baa",
+  "signature_or_digest": "sha256:62f68893fc7198e886d3a0be2d6d62a5e70b1f17c32ee3764caf275ef3926706"
+}

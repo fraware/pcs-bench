@@ -29,9 +29,22 @@ CI fails when:
 
 Mark additional suites with `live_required_for_release: true` in `suite.yaml` when their CLIs are stable in CI.
 
+## Producer-native benchmarks
+
+When all sibling repos emit `pcs_bench_ingest.v0.json`:
+
+```bash
+pcs-bench gate --suite all --live --run-producer-benchmarks --reproduce-smoke \
+  --pcs-core ../pcs-core \
+  --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge \
+  --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory
+```
+
+This is the **full PCS evaluation surface**: four producers plus pcs-bench cross-domain suites in one aggregate report and reviewer packet.
+
 ## GitHub Actions
 
-The default PR pipeline runs **simulate-gate** only (no sibling repos required).
+The default PR pipeline runs **simulate-gate** only (no sibling repos required). It validates producer ingest fixtures offline and runs `verify-packet --reproduce-smoke`.
 
 To run the live LabTrust gate manually:
 

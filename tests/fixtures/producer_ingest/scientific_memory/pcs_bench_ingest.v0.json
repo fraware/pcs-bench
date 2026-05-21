@@ -1,0 +1,93 @@
+{
+  "schema_version": "v0",
+  "producer_id": "scientific-memory",
+  "suite_id": "scientific-memory-rendering-v0",
+  "workflow_id": "labtrust.qc_release_v0.1",
+  "benchmark_runs": [],
+  "coverage_reports": [],
+  "failure_localization_reports": [],
+  "explain_quality_reports": [
+    {
+      "schema_version": "v0",
+      "report_id": "sm-render-benchmark-v0",
+      "suite_id": "scientific-memory-rendering-v0",
+      "case_id": "valid-scientific-memory-import",
+      "producer_id": "scientific-memory",
+      "workflow_id": "labtrust.qc_release_v0.1",
+      "required_sections": [
+        "provenance",
+        "hashes",
+        "handoffs",
+        "verification",
+        "formal_checks",
+        "limitations",
+        "lineage",
+        "repair_hints"
+      ],
+      "sections": {
+        "provenance": {
+          "present": true,
+          "score": 1.0
+        },
+        "hashes": {
+          "present": true,
+          "score": 1.0
+        },
+        "handoffs": {
+          "present": true,
+          "score": 1.0
+        },
+        "verification": {
+          "present": true,
+          "score": 1.0
+        },
+        "formal_checks": {
+          "present": true,
+          "score": 1.0
+        },
+        "limitations": {
+          "present": true,
+          "score": 1.0
+        },
+        "lineage": {
+          "present": true,
+          "score": 1.0
+        },
+        "repair_hints": {
+          "present": true,
+          "score": 1.0
+        }
+      },
+      "sections_present_count": 8,
+      "sections_required_count": 8,
+      "quality_score": 1.0,
+      "gaps": [],
+      "source_repo": "https://github.com/fraware/scientific-memory",
+      "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+      "signature_or_digest": "sha256:be7600a500877fb925e4033f461e49d669aad153a8a852f7f76ac7f82f37be0e"
+    }
+  ],
+  "profile_coverage_reports": [],
+  "commands": [
+    {
+      "command": "scientific_memory_render_benchmark",
+      "exit_code": 0
+    }
+  ],
+  "logs": [],
+  "source_repo": "https://github.com/fraware/scientific-memory",
+  "source_commit": "0e059e934bc95bcc4dc0cb6593b18b07a28529a2",
+  "signature_or_digest": "sha256:7eb0f1a152b5fb1ac6350dc0c799565ab5d35601dac90ce7799751d100c57e88",
+  "artifact_refs": [
+    {
+      "schema_version": "v0",
+      "artifact_type": "ExplainQualityReport.v0",
+      "path": "benchmarks/rendering/explain_quality_report.sm-render-benchmark-v0.v0.json",
+      "sha256": "sha256:be7600a500877fb925e4033f461e49d669aad153a8a852f7f76ac7f82f37be0e",
+      "role": "producer_export",
+      "source_repo": "https://github.com/fraware/scientific-memory",
+      "source_commit": "0e059e934bc95bcc4dc0cb6593b18b07a28529a2",
+      "signature_or_digest": "sha256:a0b626cb8358013737947fe3252c66d00559da67ce7ceb68113e62b30309f941"
+    }
+  ]
+}

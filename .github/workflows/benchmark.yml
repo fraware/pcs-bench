@@ -68,9 +68,9 @@ jobs:
         shell: bash
         run: |
           if [ -d pcs-core/schemas ]; then
-            python -m pcs_bench gate --suite all --out reports/ci.json --out-packet packets/ci --pcs-core pcs-core
+            python -m pcs_bench gate --suite all --out reports/ci.json --out-packet packets/ci --pcs-core pcs-core --reproduce-smoke
           else
-            python -m pcs_bench gate --suite all --out reports/ci.json --out-packet packets/ci
+            python -m pcs_bench gate --suite all --out reports/ci.json --out-packet packets/ci --reproduce-smoke
           fi
 
       - name: Generate reports

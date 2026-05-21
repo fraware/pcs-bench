@@ -1,0 +1,51 @@
+{
+  "schema_version": "v0",
+  "producer_id": "certifyedge",
+  "suite_id": "certifyedge-certificate-v0",
+  "workflow_id": "labtrust.qc_release_v0.1",
+  "benchmark_runs": [],
+  "coverage_reports": [
+    {
+      "schema_version": "v0",
+      "coverage_id": "certifyedge-cert-bench-v0",
+      "metric": "certificate_completeness",
+      "metric_id": "certificate_completeness_score",
+      "numerator": 4.0,
+      "denominator": 4.0,
+      "coverage_ratio": 1.0,
+      "details": {
+        "producer_id": "certifyedge",
+        "certificate_id": "cert-labtrust-qc-v0",
+        "violations": []
+      },
+      "source_repo": "https://github.com/fraware/CertifyEdge",
+      "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+      "signature_or_digest": "sha256:41a447e3d126819a85e77dc2ddbc3e67a2d9dfe4c1e86cf0481022ef6e7c06e5"
+    }
+  ],
+  "failure_localization_reports": [],
+  "explain_quality_reports": [],
+  "profile_coverage_reports": [],
+  "commands": [
+    {
+      "command": "certifyedge_certificate_benchmark cert-labtrust-qc-v0",
+      "exit_code": 0
+    }
+  ],
+  "logs": [],
+  "source_repo": "https://github.com/fraware/CertifyEdge",
+  "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+  "signature_or_digest": "sha256:0734fd155747066c00aa1ddd5d84f11efc907e7a38e94eb08fd5bc195f79a56c",
+  "artifact_refs": [
+    {
+      "schema_version": "v0",
+      "artifact_type": "CoverageReport.v0",
+      "path": "benchmarks/certificate/coverage_report.certifyedge-cert-bench-v0.v0.json",
+      "sha256": "sha256:41a447e3d126819a85e77dc2ddbc3e67a2d9dfe4c1e86cf0481022ef6e7c06e5",
+      "role": "producer_export",
+      "source_repo": "https://github.com/fraware/CertifyEdge",
+      "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+      "signature_or_digest": "sha256:971661db2c399b90eef4ab256e78390dbfe73686c2103c581376d50e389f0769"
+    }
+  ]
+}

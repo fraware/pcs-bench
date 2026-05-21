@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
+import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from enum import Enum
@@ -12,6 +15,21 @@ from typing import Any
 from pydantic import BaseModel
 
 from pcs_bench.config import BenchConfig
+
+
+def resolve_executable(name: str) -> str:
+    """Resolve a CLI name to an absolute path when it is on PATH."""
+    found = shutil.which(name)
+    return found if found else name
+
+
+def merged_subprocess_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Child process environment with UTF-8 stdio on Windows."""
+    env = {**os.environ, **(extra or {})}
+    if sys.platform == "win32":
+        env.setdefault("PYTHONIOENCODING", "utf-8")
+        env.setdefault("PYTHONUTF8", "1")
+    return env
 
 
 class AdapterStatus(str, Enum):
@@ -67,7 +85,7 @@ class RepoAdapter:
         return self.config.timeouts.command_seconds
 
     def check_available(self) -> AdapterStatus:
-        result = self.run([self._binary(), "--help"], cwd=self.repo_path)
+        result = self.run([resolve_executable(self._binary()), "--help"], cwd=self.repo_path)
         if result.exit_code == 0:
             return AdapterStatus.AVAILABLE
         return AdapterStatus.UNAVAILABLE
@@ -124,8 +142,10 @@ class RepoAdapter:
                 cwd=work_dir,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 timeout=self.timeout_seconds,
-                env=env,
+                env=merged_subprocess_env(env),
             )
             exit_code = proc.returncode
             stdout = proc.stdout or ""

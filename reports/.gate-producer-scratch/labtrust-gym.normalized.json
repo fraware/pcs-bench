@@ -1,0 +1,51 @@
+{
+  "schema_version": "v0",
+  "report_id": "pcs-bench-report-99fb7210a855",
+  "benchmark_suite_id": "labtrust-qc-release-v0",
+  "runs": [
+    {
+      "run_id": "bench-run-labtrust-valid-release-v0",
+      "case_id": "labtrust-valid-release-v0",
+      "path": "reports/.gate-producer-scratch/labtrust-gym.normalized-runs/bench-run-labtrust-valid-release-v0/benchmark_run.labtrust-valid-release-v0.v0.json",
+      "observed_status": "failed"
+    }
+  ],
+  "metrics": [
+    "release_reproducibility_score"
+  ],
+  "metric_summaries": [
+    {
+      "name": "release_reproducibility_score",
+      "applicability": "measured"
+    }
+  ],
+  "summary": {
+    "total_cases": 1,
+    "passed_cases": 0,
+    "failed_cases": 1,
+    "expected_failures_detected": 0,
+    "unexpected_passes": 0,
+    "unexpected_failures": 0,
+    "failure_localization_accuracy": 0.0,
+    "repair_hint_accuracy": 0.0,
+    "formal_check_coverage": 0.0,
+    "registry_coverage": 0.0,
+    "scientific_memory_render_coverage": 0.0,
+    "execution_mode": "live",
+    "evidence_grade": "release",
+    "live_cases": 1,
+    "simulated_cases": 0,
+    "hybrid_fallback_cases": 0
+  },
+  "coverage": {},
+  "failures": [
+    {
+      "case_id": "labtrust-valid-release-v0",
+      "message": "expected benchmark=failed system=not_evaluated; observed system=not_evaluated"
+    }
+  ],
+  "source_repo": "https://github.com/fraware/pcs-bench",
+  "source_commit": "2ee816754ef846df47a4eb1805d1cd0e3ae6eea8",
+  "signature_or_digest": "sha256:df1c8a5af39927c54d4f62eb9380b185b3e9b6c850ce495b2e2710fe2ba04b7a",
+  "producer_id": "pcs-bench"
+}

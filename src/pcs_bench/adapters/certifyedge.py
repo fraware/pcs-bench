@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pcs_bench.adapters.base import AdapterStatus, CommandResult, RepoAdapter
+from pcs_bench.adapters.base import AdapterStatus, CommandResult, RepoAdapter, resolve_executable
 from pcs_bench.config import BenchConfig
 
 
@@ -15,7 +15,7 @@ class CertifyEdgeAdapter(RepoAdapter):
         super().__init__(repo_path, config)
 
     def _binary(self) -> str:
-        return self.config.commands.certifyedge
+        return resolve_executable(self.config.commands.certifyedge)
 
     def emit_certificate(
         self,

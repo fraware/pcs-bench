@@ -25,6 +25,44 @@ _ARTIFACT_SCHEMA_FILES: dict[str, list[str]] = {
         "BenchmarkCase.v0.schema.json",
         "common.defs.json",
     ],
+    "common.defs": [
+        "common.defs.json",
+    ],
+    "PcsBenchIngest.v0": [
+        "PcsBenchIngest.v0.schema.json",
+        "PcsBenchIngest.v0.json",
+        "BenchmarkRun.v0.schema.json",
+        "FailureLocalizationResult.v0.schema.json",
+        "BenchmarkArtifactRef.v0.schema.json",
+        "common.defs.json",
+        "CoverageReport.v0.schema.json",
+        "ExplainQualityReport.v0.schema.json",
+        "ProfileCoverageReport.v0.schema.json",
+    ],
+    "BenchmarkRun.v0": [
+        "BenchmarkRun.v0.schema.json",
+        "common.defs.json",
+    ],
+    "FailureLocalizationResult.v0": [
+        "FailureLocalizationResult.v0.schema.json",
+        "common.defs.json",
+    ],
+    "BenchmarkArtifactRef.v0": [
+        "BenchmarkArtifactRef.v0.schema.json",
+        "common.defs.json",
+    ],
+    "CoverageReport.v0": [
+        "CoverageReport.v0.schema.json",
+        "common.defs.json",
+    ],
+    "ExplainQualityReport.v0": [
+        "ExplainQualityReport.v0.schema.json",
+        "common.defs.json",
+    ],
+    "ProfileCoverageReport.v0": [
+        "ProfileCoverageReport.v0.schema.json",
+        "common.defs.json",
+    ],
 }
 
 
@@ -57,7 +95,15 @@ def _uses_legacy_metric_summary_ref(schema: dict) -> bool:
 
 def load_artifact_schema(pcs_core_path: Path, artifact_name: str) -> dict | None:
     """Load BenchmarkCase.v0.schema.json style artifact schema."""
-    primary = _ARTIFACT_SCHEMA_FILES.get(artifact_name, [f"{artifact_name}.schema.json"])[0]
+    candidates = _ARTIFACT_SCHEMA_FILES.get(
+        artifact_name, [f"{artifact_name}.schema.json", f"{artifact_name}.json"]
+    )
+    primary = candidates[0]
+    if artifact_name == "PcsBenchIngest.v0":
+        for name in ("PcsBenchIngest.v0.json", "PcsBenchIngest.v0.schema.json"):
+            if _find_schema_file(pcs_core_path, name) or (_EMBEDDED_DIR / name).exists():
+                primary = name
+                break
     path = _find_schema_file(pcs_core_path, primary)
     if not path:
         fallback = _embedded_schema_path(artifact_name)
@@ -90,6 +136,21 @@ def _registry_for(pcs_core_key: str, artifact_name: str) -> Registry:
     return registry
 
 
+def _load_common_def_schema(pcs_core_path: Path, def_name: str) -> dict | None:
+    path = _find_schema_file(pcs_core_path, "common.defs.json")
+    if not path:
+        return None
+    common = json.loads(path.read_text(encoding="utf-8"))
+    sub = common.get("$defs", {}).get(def_name)
+    if not sub:
+        return None
+    return {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": f"https://pcs.sentinelops.ci/schemas/{def_name}",
+        **sub,
+    }
+
+
 def validate_instance(
     instance: dict,
     artifact_name: str,
@@ -101,14 +162,25 @@ def validate_instance(
     except ImportError:
         return ["jsonschema package required"]
 
-    schema = load_artifact_schema(pcs_core_path, artifact_name)
+    if artifact_name == "benchmark_command_entry":
+        schema = _load_common_def_schema(pcs_core_path, "benchmark_command_entry")
+        registry_key = "common.defs"
+    else:
+        schema = load_artifact_schema(pcs_core_path, artifact_name)
+        registry_key = artifact_name
     if not schema:
         return [f"Schema not found for {artifact_name}"]
 
     root = pcs_core_path.resolve()
     if not (root / "schemas").is_dir():
         root = _PKG_ROOT
-    registry = _registry_for(str(root), artifact_name)
+    registry = _registry_for(str(root), registry_key)
+    if artifact_name == "benchmark_command_entry":
+        defs_path = _find_schema_file(root, "common.defs.json")
+        if defs_path:
+            common = json.loads(defs_path.read_text(encoding="utf-8"))
+            resource = Resource.from_contents(common, default_specification=DRAFT202012)
+            registry = registry.with_resource(defs_path.name, resource)
     try:
         validator = Draft202012Validator(schema, registry=registry)
         validator.validate(instance)

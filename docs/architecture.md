@@ -27,7 +27,9 @@ Suites may set `live_required_for_release: true` (LabTrust). CI with `--ci` fail
 
 ## Release gate
 
-`pcs-bench gate` runs: materialize fixtures → fixture manifest verify → validate cases → benchmark with `--ci` → `validate-report` → export packet → `verify-packet`.
+`pcs-bench gate` runs: materialize fixtures → fixture manifest verify → validate cases → validate producer ingest fixtures → benchmark with `--ci` → (optional) aggregate producer `PcsBenchIngest.v0` → `validate-report` → export packet → `verify-packet` (optional `--reproduce-smoke`).
+
+With `--run-producer-benchmarks`, the gate runs producer-native benchmarks, ingests four `pcs_bench_ingest.v0.json` files, and merges them with pcs-bench-owned suites into one `BenchmarkReport.v0`. See [Producer ingest](producer-ingest.md).
 
 GitHub Actions runs the same simulate gate on every PR; optional workflow dispatch runs the LabTrust live gate when sibling repos are available.
 
@@ -45,7 +47,10 @@ Each stage records commands in `CaseExecutionContext` and writes `artifact_analy
 
 | Module | Responsibility |
 |--------|----------------|
-| `cli.py` | Typer CLI: run, gate, report, compare, validate-cases, validate-report, verify-packet, sync-schemas, explain, check-adapters |
+| `cli.py` | Typer CLI: run, gate, report, compare, validate-cases, validate-report, validate-ingest, ingest-producer-output, verify-packet, sync-schemas, explain, check-adapters |
+| `producer_ingest.py` | `PcsBenchIngest.v0` → `BenchmarkReport.v0` normalization |
+| `producer_gate.py` | Producer benchmark orchestration and gate aggregation |
+| `ingest_validation.py` | Strict ingest schema + policy validation |
 | `pipeline/` | Declarative evaluation stages |
 | `artifacts.py` | Certificate, registry, and rendering completeness analysis |
 | `simulation.py` | Expected sidecar loading for offline evaluation |

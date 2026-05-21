@@ -1,6 +1,6 @@
 {
-  "manifest_id": "fixture-manifest-20260520155926",
-  "generated_at": "2026-05-20T15:59:26.083519+00:00",
+  "manifest_id": "fixture-manifest-20260521180721",
+  "generated_at": "2026-05-21T18:07:21.423435+00:00",
   "benchmarks_root": "C:\\Users\\mateo\\pcs-bench\\benchmarks",
   "file_count": 385,
   "entries": [
@@ -11,7 +11,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\dataset_hash_mismatch\\benchmark_case.v0.json",
-      "sha256": "sha256:13ee7e2cf60fecd97d9f4ddbf3fe8b029c7a234c6560ea12469f8759d252dde4",
+      "sha256": "sha256:5c27a9a35e63756f5b4b86e68125530766f3bda532e6b711fa9e3c918f198439",
       "size_bytes": 781
     },
     {
@@ -56,7 +56,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\environment_digest_mismatch\\benchmark_case.v0.json",
-      "sha256": "sha256:1e27b7604681d4128540c9d11b26cd67f6c44234a8405ff54042f2a0cee2fac3",
+      "sha256": "sha256:3d57b6ef3484cbf915624c399899da19a3c19fdd2000bb7688013a5246e1908c",
       "size_bytes": 799
     },
     {
@@ -101,7 +101,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\missing_code_commit\\benchmark_case.v0.json",
-      "sha256": "sha256:3e051367790347805699069e56f6ee7197085a255f7f519569285c8d65c5f340",
+      "sha256": "sha256:ebc837418285be9c28498852df79cb23710e43209d7e2172bf09944a58956f1d",
       "size_bytes": 775
     },
     {
@@ -146,7 +146,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\missing_lean_check_result\\benchmark_case.v0.json",
-      "sha256": "sha256:0561d458571863830b5fae1991bc91691c3a46e6c56a935d338bb39c6e9cdbb2",
+      "sha256": "sha256:d1c97896ff8c1a30612c8ddeda687a104a17035eb794592a489152c51edcc505",
       "size_bytes": 796
     },
     {
@@ -196,7 +196,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\missing_result_artifact\\benchmark_case.v0.json",
-      "sha256": "sha256:1af5fb685aae1ed3279a8572c2ad2aabdbb42f572bcfbd32e41ebcea5a225382",
+      "sha256": "sha256:fd4e9459d65451af8cd666cfc904213304a22b077f3b8be1e66bef32151ce83f",
       "size_bytes": 784
     },
     {
@@ -241,7 +241,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\nonzero_exit_code\\benchmark_case.v0.json",
-      "sha256": "sha256:5a04d9b6214fb9a53b122f5664f70763febcb5c526c321aaf4677c5c03f7f628",
+      "sha256": "sha256:ff901e37b9d4b55b4f44b59c84db839092430acfbd3f2df4ebcc4f3d668a2331",
       "size_bytes": 766
     },
     {
@@ -286,7 +286,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\rejected_computation_witness\\benchmark_case.v0.json",
-      "sha256": "sha256:3602951ff18cdb74d58432009b33c6676e196257bfcc2e813a6c37078e05ec4a",
+      "sha256": "sha256:84d793d3fe5775ca4431e4ea9f4480b90017e3b1bfd107cf0c837bd4566df3a1",
       "size_bytes": 794
     },
     {
@@ -331,7 +331,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\result_hash_mismatch\\benchmark_case.v0.json",
-      "sha256": "sha256:c3973cf4eb8a3fd949a1677a61641987a292eacf74b66c947a13725addf8f4a0",
+      "sha256": "sha256:744d51cea4cea0dc161ed9482c9b17f406ee93e86743aa63364c5ea9b7489b7f",
       "size_bytes": 772
     },
     {
@@ -376,7 +376,7 @@
     },
     {
       "path": "computation_reproducibility\\invalid\\wrong_admission_profile\\benchmark_case.v0.json",
-      "sha256": "sha256:029c24cd27f75b3ab23d8f699f52132129883d57f98565956823b164d358f54a",
+      "sha256": "sha256:89bf2fff0396df3420ed041b564ea322ad2fa6974f5f40164f52e62bcf4db7af",
       "size_bytes": 776
     },
     {
@@ -421,7 +421,7 @@
     },
     {
       "path": "computation_reproducibility\\valid\\computation-valid-v0\\benchmark_case.v0.json",
-      "sha256": "sha256:db3388d4e7c173eca97997d47964f221a36b1f55bafb5d68e6141ec27c035882",
+      "sha256": "sha256:ecf34e66ba7037791eca13fac4b4b8329a61346f16ec30ea142d00b9a8ea5893",
       "size_bytes": 699
     },
     {
@@ -711,7 +711,7 @@
     },
     {
       "path": "labtrust_qc_release\\invalid\\certificate_id_tamper\\benchmark_case.v0.json",
-      "sha256": "sha256:43982de7403ab00875401e60023870c1fd02a59b531c0b2cdca2ca0b11e73d68",
+      "sha256": "sha256:268abc8e2546c6a77f28897dbce5e47b0bc8063d4321a31a989225ac0a5bb203",
       "size_bytes": 765
     },
     {
@@ -751,7 +751,7 @@
     },
     {
       "path": "labtrust_qc_release\\invalid\\lean_trust_kernel_failure\\benchmark_case.v0.json",
-      "sha256": "sha256:79e2209a2625e0a0694143fb31bdb25e928f4ce4a6372957437110c1ec7284cb",
+      "sha256": "sha256:e829f29c5c6976755083a5438099f5a2ca1ba89d770c90076aed4e48485618a7",
       "size_bytes": 754
     },
     {
@@ -801,7 +801,7 @@
     },
     {
       "path": "labtrust_qc_release\\invalid\\legacy_handoff_file\\benchmark_case.v0.json",
-      "sha256": "sha256:43209218e467e7bcb7fcfe5009e13054276b58a0c0213a2620c5e92ac4210948",
+      "sha256": "sha256:bd317ca328aa2ce6585d11e789eea77bb8aa5a400d602ef5170abad6e5bbcd2f",
       "size_bytes": 731
     },
     {
@@ -841,7 +841,7 @@
     },
     {
       "path": "labtrust_qc_release\\invalid\\missing_qc_result\\benchmark_case.v0.json",
-      "sha256": "sha256:c62e0d4c7cd41386b01d929afdf2d47882c3d6f31191a4f98e519e6635787881",
+      "sha256": "sha256:18407df6db28d8c828d8fcc39e188657de5f940e8bac92f080993ee6888c0aae",
       "size_bytes": 742
     },
     {
@@ -881,7 +881,7 @@
     },
     {
       "path": "labtrust_qc_release\\invalid\\placeholder_commit\\benchmark_case.v0.json",
-      "sha256": "sha256:94b7fdd53321c6287a98db403f69ad7df6423f403f7da8d10e6fdc964b875e7a",
+      "sha256": "sha256:14136798e4b008cb1fa0f8e2b0534152cab994707a04d239b2d72c41a1ca28c9",
       "size_bytes": 757
     },
     {
@@ -921,7 +921,7 @@
     },
     {
       "path": "labtrust_qc_release\\invalid\\stale_trace_after_certificate\\benchmark_case.v0.json",
-      "sha256": "sha256:d9071a913a235d65225805d608901f42030f4e361d5bd3c8b7dcec9168e9de16",
+      "sha256": "sha256:a5c1aff85fff16405a8bd5b5ff34aadd09d2706ce9e3ad8efde76329bdf8d37f",
       "size_bytes": 728
     },
     {
@@ -961,7 +961,7 @@
     },
     {
       "path": "labtrust_qc_release\\invalid\\trace_hash_tamper\\benchmark_case.v0.json",
-      "sha256": "sha256:7cf60cca79439cc83dd55a28b44718fc07aa0b5de147d03f4c52b822ee3cb1be",
+      "sha256": "sha256:b2ef272e3b936c8ae3f12464207c00bc6a367954e0e8b6a35b1995da86123fea",
       "size_bytes": 741
     },
     {
@@ -1001,7 +1001,7 @@
     },
     {
       "path": "labtrust_qc_release\\invalid\\unauthorized_release\\benchmark_case.v0.json",
-      "sha256": "sha256:79bdabb36822c916bdf311df56603933ff7b8be518dcf3940de72f135d5d5f15",
+      "sha256": "sha256:6ce4733a22cdf24e2cc5cbbe72eb8ff489f1ef3d19eea72ab14c65a405e32acb",
       "size_bytes": 751
     },
     {
@@ -1041,7 +1041,7 @@
     },
     {
       "path": "labtrust_qc_release\\valid\\labtrust-valid-release-v0\\benchmark_case.v0.json",
-      "sha256": "sha256:c12ba7f387f0fa49d102cdb1cb2976512e78db11c0e486dc01390883b3671dec",
+      "sha256": "sha256:3263e8dcf5cdb30e55675f13e9195fa604212eac93ce50ca5e7cf5b3b68bd27a",
       "size_bytes": 691
     },
     {
@@ -1086,7 +1086,7 @@
     },
     {
       "path": "scientific_memory_rendering\\invalid\\failed-release-rendering\\benchmark_case.v0.json",
-      "sha256": "sha256:cd19339790b813c03b207ba52c1b9d86871541bbed70021c3d0e3a81c2eb01ab",
+      "sha256": "sha256:b18b014fb6ffbf25b8dbbeddb53b9fd224b3f5113800cb9f5dd30ceddaac8bfe",
       "size_bytes": 728
     },
     {
@@ -1131,7 +1131,7 @@
     },
     {
       "path": "scientific_memory_rendering\\invalid\\missing-artifact-registry-section\\benchmark_case.v0.json",
-      "sha256": "sha256:8d3257c84b4da27a41e034c3287cf045dd5d3526ccf869a4edc5da689741a56d",
+      "sha256": "sha256:d6bbff103a7d02ce4443fcac90895207770548f33f0422ef70d555ffd17e6c84",
       "size_bytes": 754
     },
     {
@@ -1221,7 +1221,7 @@
     },
     {
       "path": "scientific_memory_rendering\\invalid\\missing-formal-trust-kernel-section\\benchmark_case.v0.json",
-      "sha256": "sha256:a94cb33a6daf074a3a7616a662a066f0c6daac3448ba91b8cefef4bb0e5b9b02",
+      "sha256": "sha256:34f2c97be571796a16e9060bca447d4e0fde8f721111522db0897c281ed7759e",
       "size_bytes": 758
     },
     {
@@ -1266,7 +1266,7 @@
     },
     {
       "path": "scientific_memory_rendering\\invalid\\missing-lineage-section\\benchmark_case.v0.json",
-      "sha256": "sha256:46cd857d5f4f7fb6432128d838b1ae7b0d7af92a7689f2d9857daf98517fea7d",
+      "sha256": "sha256:0f4abf6020f0dd37b5660b2386433a0cbfd6b7099be7c7465505964bc3325c24",
       "size_bytes": 734
     },
     {
@@ -1311,7 +1311,7 @@
     },
     {
       "path": "scientific_memory_rendering\\invalid\\missing-staleness-section\\benchmark_case.v0.json",
-      "sha256": "sha256:84195350459ec80ccab2e8091002761a6144e9a69437458a2b7ed6d5122e0cf8",
+      "sha256": "sha256:56b573d3bdd9dec8b8ad29b4375d42a867c6c929862fcb774f5fc9119bf38c13",
       "size_bytes": 738
     },
     {
@@ -1356,7 +1356,7 @@
     },
     {
       "path": "scientific_memory_rendering\\invalid\\release-comparison-changed-certificate\\benchmark_case.v0.json",
-      "sha256": "sha256:d528b4869fce7f6bfaaffce9c3bddba205da741332bac3213a58e05b15023061",
+      "sha256": "sha256:4093fc5d534d6e7a42deb3e6ab8ccafdd7857f29abce04074857de2e7c629108",
       "size_bytes": 764
     },
     {
@@ -1401,7 +1401,7 @@
     },
     {
       "path": "scientific_memory_rendering\\invalid\\release-comparison-changed-dataset\\benchmark_case.v0.json",
-      "sha256": "sha256:4b53ff06cb4a3c2ed4123f4cbb8ac7092becbd8544a2de897f70a38936f04839",
+      "sha256": "sha256:e6fa06d31b444dc109a97329aea7d55fa78dcce897ca96222a8562053ed39551",
       "size_bytes": 752
     },
     {
@@ -1446,7 +1446,7 @@
     },
     {
       "path": "scientific_memory_rendering\\valid\\render-all-sections-v0\\benchmark_case.v0.json",
-      "sha256": "sha256:56959cc964281f0e41d36bc74aa3e29087843b9b9c61ad220a74ca65b5f8967f",
+      "sha256": "sha256:9788b420b878d51ffc0d36e61b8eee1cf3a289f2854434fb98cab314d84f0748",
       "size_bytes": 683
     },
     {
@@ -1491,7 +1491,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\missing_handoff\\benchmark_case.v0.json",
-      "sha256": "sha256:9b81f22648cee8042703549edde42b0abee0078063eccac45b79229122fe0f16",
+      "sha256": "sha256:dd849e535b7fe04a44e2c79b409a58b89dd91e28dbf60574ca30b999f68fb8ec",
       "size_bytes": 722
     },
     {
@@ -1531,7 +1531,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\missing_policy_hash\\benchmark_case.v0.json",
-      "sha256": "sha256:1e653a35e345cfaaed786b76b4b24cabdb4696673c0b159e60c4bdbe10ca708a",
+      "sha256": "sha256:e0bae304fb83cf5f44f559f75b4d3d91b5d779e83be14d75dead9331096f18f1",
       "size_bytes": 748
     },
     {
@@ -1571,7 +1571,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\missing_tool_use_certificate\\benchmark_case.v0.json",
-      "sha256": "sha256:98db888c3d299989b68d0f8c835cc0a33e977f22dfe5e8fff8d89b74e2a3de29",
+      "sha256": "sha256:66cecf98de14baec52dd59e82cd7bbb325caa06bc5aaf7a0c33dc843bb32ba2e",
       "size_bytes": 785
     },
     {
@@ -1611,7 +1611,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\policy_hash_mismatch\\benchmark_case.v0.json",
-      "sha256": "sha256:077bec04beffa8658dbb40b974809362865f328b2f0f193f14ca15f44ed697c1",
+      "sha256": "sha256:96d545f3991235b4ac7278410e33e3a1d925f9028f6a99057ab1f4b41a6ca077",
       "size_bytes": 749
     },
     {
@@ -1651,7 +1651,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\rejected_tool_certificate\\benchmark_case.v0.json",
-      "sha256": "sha256:69490f664e432d7326bb892c7c6a832edc42712df554b4342fcca557c11a04af",
+      "sha256": "sha256:115712395fa3ab44e9c317cef4d4f58a2304edc77b17e1b88f3b54ea2afd960f",
       "size_bytes": 776
     },
     {
@@ -1691,7 +1691,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\tool_trace_hash_mismatch\\benchmark_case.v0.json",
-      "sha256": "sha256:4666b34397dc1ea23dcfa74c4b283050fbb4df4d1ccbb6b6a16d4c2ab2cface9",
+      "sha256": "sha256:4524b44adccf0d30898dbacd2eb3f0da4526dc51ebc8ab74f246fd0057b22389",
       "size_bytes": 761
     },
     {
@@ -1731,7 +1731,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\unauthorized_tool_call\\benchmark_case.v0.json",
-      "sha256": "sha256:35f18cab26161ddf23e8b3d218592b46bafa1f743617be14a96f8fb6143e0726",
+      "sha256": "sha256:332e5396b8ae9f56f0dbdd334797f743f2108ba9e2ed6f3ab1d656d34a56facf",
       "size_bytes": 758
     },
     {
@@ -1771,7 +1771,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\unknown_authorization_status\\benchmark_case.v0.json",
-      "sha256": "sha256:75729e9c26d9ac5560ecb9f577e89863df8d867ac33389756c50876fa1cd0165",
+      "sha256": "sha256:0efcf00aaac541cd0ab636d20c17bd08fac6b015dee08820970f9cfdcb81ec7c",
       "size_bytes": 768
     },
     {
@@ -1811,7 +1811,7 @@
     },
     {
       "path": "tool_use_safety\\invalid\\wrong_admission_profile\\benchmark_case.v0.json",
-      "sha256": "sha256:22c22e7bcb984f43c54fd86e3b616803581a1d5831c1ad74b4ef7f902155fe5b",
+      "sha256": "sha256:f1136ca0fa62707b3ffc0ca92d9383971e1aa71f7ba4f0347f1b01a40c002aa7",
       "size_bytes": 753
     },
     {
@@ -1851,7 +1851,7 @@
     },
     {
       "path": "tool_use_safety\\valid\\tool-use-valid-v0\\benchmark_case.v0.json",
-      "sha256": "sha256:9f7a0885bd4eea59f1064f62e419221e529fd4430286078f93da7945ffa11274",
+      "sha256": "sha256:870a32d2a53cf45f6134a6e6578c53840be76249895e64d58f3054ac9b800bc8",
       "size_bytes": 676
     },
     {

@@ -456,16 +456,46 @@ def gate_cmd(
     packet_dir: Path = typer.Option(Path("packets/latest"), "--out-packet", "--packet"),
     suite: str = typer.Option("all", "--suite"),
     live: bool = typer.Option(False, "--live", help="Run benchmark gate in live mode."),
+    hybrid: bool = typer.Option(
+        False,
+        "--hybrid",
+        help="Try live CLIs first; fall back to fixture simulation when a CLI is missing.",
+    ),
+    run_producer_benchmarks: bool = typer.Option(
+        False,
+        "--run-producer-benchmarks",
+        help="Run producer-native benchmarks, ingest PcsBenchIngest.v0, and merge into gate report.",
+    ),
+    use_producer_fixtures: bool = typer.Option(
+        False,
+        "--use-producer-fixtures",
+        help="Use embedded golden ingests when a producer repo has no pcs_bench_ingest.v0.json.",
+    ),
+    reproduce_smoke: bool = typer.Option(
+        False,
+        "--reproduce-smoke",
+        help="Run packet verify with reproduction smoke checks (valid/invalid/explain/rendering).",
+    ),
     pcs_core: Optional[Path] = typer.Option(
         None,
         "--pcs-core",
         help="pcs-core checkout for schema validation (overrides pcs-bench.yaml).",
     ),
+    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
+    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
+    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
 ) -> None:
     """Run full release gate: fixtures, manifest, cases, benchmark, report validation, packet."""
     import subprocess
 
-    cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
+    cfg = _load_config(config).apply_cli_overrides(
+        pcs_core=pcs_core,
+        labtrust=labtrust,
+        certifyedge=certifyedge,
+        provability_fabric=provability_fabric,
+        scientific_memory=scientific_memory,
+    )
     root = Path.cwd()
     py = sys.executable
 
@@ -474,33 +504,101 @@ def gate_cmd(
         ([py, "-m", "pcs_bench", "verify-fixtures", "--write"], "write fixture manifest"),
         ([py, "-m", "pcs_bench", "verify-fixtures"], "verify fixture manifest"),
         ([py, "-m", "pcs_bench", "validate-cases", "--suite", suite, "--dry-run"], "validate cases"),
+        (
+            [py, str(root / "scripts" / "validate_producer_ingest_fixtures.py")]
+            + (
+                ["--pcs-core", str(cfg.repos.pcs_core)]
+                if cfg.repos.pcs_core.is_dir()
+                else []
+            ),
+            "validate producer ingest fixtures",
+        ),
     ]
-    run_args = [py, "-m", "pcs_bench", "run", "--suite", suite, "--ci", "--out", str(out)]
-    if live:
+    bench_out = out.parent / f"{out.stem}-bench-only.json" if run_producer_benchmarks else out
+    run_args = [py, "-m", "pcs_bench", "run", "--suite", suite, "--ci", "--out", str(bench_out)]
+    if hybrid:
+        run_args.append("--hybrid")
+    elif live:
         run_args.append("--live")
     else:
         run_args.append("--simulate")
     steps.append((run_args, "benchmark run"))
+
+    if live and not hybrid:
+        from pcs_bench.runners import AdapterRegistry
+
+        registry = AdapterRegistry(cfg)
+        statuses = registry.check_all()
+        missing = {
+            name: status.value
+            for name, status in statuses.items()
+            if status != AdapterStatus.AVAILABLE
+        }
+        if missing:
+            console.print("[red]Live gate requires all ecosystem adapters.[/red]")
+            for name, status in sorted(missing.items()):
+                console.print(f"  [dim]{name}[/dim]: {status}")
+            console.print(
+                "[yellow]Fix CLIs (see: pcs-bench check-adapters) or use "
+                "make producer-gate / gate --hybrid for partial live + fixture fallback.[/yellow]"
+            )
+            raise typer.Exit(1)
+
+    for cmd, label in steps:
+        console.print(f"[bold]gate[/bold] {label}")
+        proc = subprocess.run(cmd, cwd=root)
+        if proc.returncode != 0:
+            console.print(f"[red]Gate failed at step:[/red] {label}")
+            raise typer.Exit(proc.returncode)
+
+    if run_producer_benchmarks:
+        from pcs_bench.producer_gate import aggregate_gate_report
+
+        console.print("[bold]gate[/bold] aggregate producer ingests")
+        scratch = out.parent / ".gate-producer-scratch"
+        agg_errors = aggregate_gate_report(
+            cfg,
+            bench_out,
+            scratch_dir=scratch,
+            run_producer_benchmarks=True,
+            out_path=out,
+            require_all_producers=True,
+            use_fixture_fallback=use_producer_fixtures,
+        )
+        if agg_errors:
+            console.print("[red]Producer ingest aggregation failed:[/red]")
+            for err in agg_errors:
+                console.print(f"  - {err}")
+            raise typer.Exit(1)
+        if not out.is_file():
+            console.print("[red]Gate failed: no aggregate report produced[/red]")
+            raise typer.Exit(1)
+
     validate_report_cmd = [py, "-m", "pcs_bench", "validate-report", "--input", str(out)]
     pcs_core_path = cfg.repos.pcs_core
     if pcs_core_path and pcs_core_path.is_dir():
         validate_report_cmd.extend(["--pcs-core", str(pcs_core_path)])
 
-    steps.extend(
-        [
-            (validate_report_cmd, "validate report"),
-            (
-                [py, "-m", "pcs_bench", "packet", "--report", str(out), "--out", str(packet_dir)],
-                "export packet",
-            ),
-            (
-                [py, "-m", "pcs_bench", "verify-packet", "--packet", str(packet_dir)],
-                "verify packet",
-            ),
-        ]
-    )
-
-    for cmd, label in steps:
+    post_steps = [
+        (validate_report_cmd, "validate report"),
+        (
+            [py, "-m", "pcs_bench", "packet", "--report", str(out), "--out", str(packet_dir)],
+            "export packet",
+        ),
+        (
+            [
+                py,
+                "-m",
+                "pcs_bench",
+                "verify-packet",
+                "--packet",
+                str(packet_dir),
+            ]
+            + (["--reproduce-smoke"] if reproduce_smoke else []),
+            "verify packet",
+        ),
+    ]
+    for cmd, label in post_steps:
         console.print(f"[bold]gate[/bold] {label}")
         proc = subprocess.run(cmd, cwd=root)
         if proc.returncode != 0:
@@ -510,16 +608,185 @@ def gate_cmd(
     console.print(f"[green]Gate passed[/green] report={out} packet={packet_dir}")
 
 
+@app.command("validate-producer-fixtures")
+def validate_producer_fixtures_cmd(
+    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    config: Optional[Path] = typer.Option(None, "--config"),
+) -> None:
+    """Validate all embedded producer PcsBenchIngest.v0 fixtures."""
+    from pcs_bench.producer_fixtures import resolve_schema_root, validate_all_producer_fixtures
+
+    cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
+    schema_root = resolve_schema_root(cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None)
+    results = validate_all_producer_fixtures(schema_root)
+    failed = False
+    for result in results:
+        if result.valid:
+            console.print(f"[green]OK[/green] {result.producer}")
+        else:
+            failed = True
+            console.print(f"[red]FAIL[/red] {result.producer}")
+            for err in result.errors:
+                console.print(f"  - {err}")
+    if failed:
+        raise typer.Exit(1)
+
+
+@app.command("check-producer-ingests")
+def check_producer_ingests_cmd(
+    config: Optional[Path] = typer.Option(None, "--config"),
+    fixtures_only: bool = typer.Option(
+        False,
+        "--fixtures-only",
+        help="Validate embedded golden fixtures (offline; no sibling repos required).",
+    ),
+    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
+    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
+    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+) -> None:
+    """Report PcsBenchIngest.v0 presence and validation for each producer repo."""
+    from pcs_bench.producer_fixtures import (
+        PRODUCER_FIXTURE_DIRS,
+        fixture_ingest_path,
+        resolve_schema_root,
+    )
+    from pcs_bench.producer_gate import PRODUCER_BENCHMARKS, _repo_for_producer
+    from pcs_bench.ingest_validation import validate_ingest_json
+
+    cfg = _load_config(config).apply_cli_overrides(
+        pcs_core=pcs_core,
+        labtrust=labtrust,
+        certifyedge=certifyedge,
+        provability_fabric=provability_fabric,
+        scientific_memory=scientific_memory,
+    )
+    schema_root = resolve_schema_root(cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None)
+    table = Table("Producer", "Ingest path", "Status")
+    failed = False
+
+    if fixtures_only:
+        for producer_id, dirname in PRODUCER_FIXTURE_DIRS:
+            path = fixture_ingest_path(dirname)
+            if not path.is_file():
+                table.add_row(producer_id, str(path), "[red]missing[/red]")
+                failed = True
+                continue
+            errors = validate_ingest_json(path, schema_root)
+            if errors:
+                table.add_row(producer_id, str(path), f"[red]{len(errors)} errors[/red]")
+                failed = True
+            else:
+                table.add_row(producer_id, str(path), "[green]valid[/green]")
+        console.print(table)
+        if failed:
+            raise typer.Exit(1)
+        return
+
+    for spec in PRODUCER_BENCHMARKS:
+        repo = _repo_for_producer(cfg, spec.producer)
+        path = repo / spec.ingest_rel_path
+        if not path.is_file():
+            from pcs_bench.producer_gate import _embedded_fixture_ingest
+
+            fixture = _embedded_fixture_ingest(spec.producer)
+            hint = (
+                f" [dim](golden fixture: {fixture})[/dim]"
+                if fixture
+                else " [dim](run: make sync-ingest-fixtures)[/dim]"
+            )
+            table.add_row(spec.producer, str(path), f"[red]missing[/red]{hint}")
+            failed = True
+            continue
+        errors = validate_ingest_json(path, schema_root)
+        if errors:
+            table.add_row(spec.producer, str(path), f"[red]{len(errors)} errors[/red]")
+            failed = True
+        else:
+            table.add_row(spec.producer, str(path), "[green]valid[/green]")
+    console.print(table)
+    if failed:
+        console.print(
+            "[yellow]Producer repos must emit pcs_bench_ingest.v0.json at the paths above. "
+            "For offline checks use: pcs-bench check-producer-ingests --fixtures-only[/yellow]"
+        )
+        raise typer.Exit(1)
+
+
+@app.command("ingest-all-producers")
+def ingest_all_producers_cmd(
+    out_dir: Path = typer.Option(Path("reports/producers"), "--out-dir"),
+    config: Optional[Path] = typer.Option(None, "--config"),
+    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
+    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
+    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+) -> None:
+    """Ingest PcsBenchIngest.v0 from all producer repos into normalized reports."""
+    from pcs_bench.producer_ingest_all import ingest_all_producers
+
+    cfg = _load_config(config).apply_cli_overrides(
+        pcs_core=pcs_core,
+        labtrust=labtrust,
+        certifyedge=certifyedge,
+        provability_fabric=provability_fabric,
+        scientific_memory=scientific_memory,
+    )
+    result = ingest_all_producers(cfg, out_dir)
+    for path in result.outputs:
+        console.print(f"[green]Wrote[/green] {path}")
+    if result.errors:
+        console.print("[red]Ingest errors:[/red]")
+        for err in result.errors:
+            console.print(f"  - {err}")
+        raise typer.Exit(1)
+
+
+@app.command("validate-ingest")
+def validate_ingest_cmd(
+    input: Path = typer.Option(..., "--input", help="PcsBenchIngest.v0 file or benchmark_runs directory."),
+    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    use_pcs_validate: bool = typer.Option(
+        False,
+        "--use-pcs-validate",
+        help="Also run pcs-core CLI validate when pcs is on PATH.",
+    ),
+    config: Optional[Path] = typer.Option(None, "--config"),
+) -> None:
+    """Validate a producer PcsBenchIngest.v0 payload against pcs-core schemas."""
+    from pcs_bench.ingest_validation import validate_ingest_json
+
+    from pcs_bench.producer_fixtures import resolve_schema_root
+
+    cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
+    schema_root = resolve_schema_root(cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None)
+
+    errors = validate_ingest_json(input, schema_root, use_pcs_validate=use_pcs_validate)
+    if errors:
+        console.print("[red]Ingest validation failed:[/red]")
+        for err in errors:
+            console.print(f"  - {err}")
+        raise typer.Exit(1)
+    console.print(f"[green]Ingest validation passed[/green] {input}")
+
+
 @app.command("verify-packet")
 def verify_packet_cmd(
     packet: Path = typer.Option(..., "--packet", help="Packet directory."),
+    reproduce_smoke: bool = typer.Option(
+        False,
+        "--reproduce-smoke",
+        help="Re-run simulate checks for valid/invalid cases, explain, and rendering.",
+    ),
     config: Optional[Path] = typer.Option(None, "--config"),
 ) -> None:
     """Verify benchmark packet structure and reproducibility fixtures."""
     from pcs_bench.packet import verify_benchmark_packet
 
     cfg = _load_config(config)
-    result = verify_benchmark_packet(packet, cfg)
+    result = verify_benchmark_packet(packet, cfg, reproduce_smoke=reproduce_smoke)
     if result.warnings:
         for w in result.warnings:
             console.print(f"[yellow]{w}[/yellow]")
@@ -623,7 +890,11 @@ def validate_cases_cmd(
 @app.command("ingest-producer-output")
 def ingest_producer_output_cmd(
     producer: str = typer.Option(..., "--producer", help="Producer id (certifyedge, provability-fabric, scientific-memory)."),
-    input: Path = typer.Option(..., "--input", help="Producer benchmark_runs directory."),
+    input: Path = typer.Option(
+        ...,
+        "--input",
+        help="PcsBenchIngest.v0 file or producer benchmark_runs directory.",
+    ),
     out: Path = typer.Option(..., "--out", help="Normalized BenchmarkReport.v0 output path."),
     suite: Optional[str] = typer.Option(None, "--suite", help="Override benchmark_suite_id."),
     pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),

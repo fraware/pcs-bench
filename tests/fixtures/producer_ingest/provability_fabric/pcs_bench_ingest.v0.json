@@ -1,0 +1,138 @@
+{
+  "schema_version": "v0",
+  "producer_id": "provability-fabric",
+  "suite_id": "pf-admission-v0",
+  "workflow_id": "provability_fabric.admission_v0",
+  "benchmark_runs": [],
+  "coverage_reports": [],
+  "failure_localization_reports": [],
+  "explain_quality_reports": [
+    {
+      "schema_version": "v0",
+      "report_id": "pf-admission-explain-v0",
+      "suite_id": "pf-admission-v0",
+      "case_id": "bundle-admission",
+      "producer_id": "provability-fabric",
+      "workflow_id": "provability_fabric.admission_v0",
+      "required_sections": [
+        "provenance",
+        "hashes",
+        "handoffs",
+        "verification",
+        "formal_checks",
+        "limitations",
+        "lineage",
+        "repair_hints"
+      ],
+      "sections": {
+        "provenance": {
+          "present": true,
+          "score": 1.0
+        },
+        "hashes": {
+          "present": true,
+          "score": 1.0
+        },
+        "handoffs": {
+          "present": true,
+          "score": 1.0
+        },
+        "verification": {
+          "present": true,
+          "score": 1.0
+        },
+        "formal_checks": {
+          "present": true,
+          "score": 1.0
+        },
+        "limitations": {
+          "present": true,
+          "score": 1.0
+        },
+        "lineage": {
+          "present": true,
+          "score": 1.0
+        },
+        "repair_hints": {
+          "present": true,
+          "score": 1.0
+        }
+      },
+      "sections_present_count": 8,
+      "sections_required_count": 8,
+      "quality_score": 1.0,
+      "gaps": [],
+      "source_repo": "https://github.com/SentinelOps-CI/provability-fabric",
+      "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+      "signature_or_digest": "sha256:26bc5dd43693839e2f7403de8226c262e94f28d54f6da1cef7dc457d3a2de826"
+    }
+  ],
+  "profile_coverage_reports": [
+    {
+      "schema_version": "v0",
+      "coverage_id": "pf-profile-coverage-v0",
+      "workflow_profile_id": "provability_fabric.admission_v0",
+      "producer_id": "provability-fabric",
+      "suite_id": "pf-admission-v0",
+      "artifact_types_required": [
+        "VerificationResult.v0",
+        "SignedScienceClaimBundle.v0"
+      ],
+      "artifact_types_covered": [
+        "VerificationResult.v0",
+        "SignedScienceClaimBundle.v0"
+      ],
+      "semantic_checks_required": [
+        "signed_input_hash_matches_verified_input"
+      ],
+      "semantic_checks_covered": [
+        "signed_input_hash_matches_verified_input"
+      ],
+      "handoff_steps_required": [
+        "bundle_to_verifier"
+      ],
+      "handoff_steps_covered": [
+        "bundle_to_verifier"
+      ],
+      "numerator": 4.0,
+      "denominator": 4.0,
+      "coverage_ratio": 1.0,
+      "details": {},
+      "source_repo": "https://github.com/SentinelOps-CI/provability-fabric",
+      "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+      "signature_or_digest": "sha256:bf28e9943e1cdfd02a8d68d64279feea1f7abeccff41c87f4086a1034ceac8e1"
+    }
+  ],
+  "commands": [
+    {
+      "command": "provability_fabric_admission_explain_quality",
+      "exit_code": 0
+    }
+  ],
+  "logs": [],
+  "source_repo": "https://github.com/SentinelOps-CI/provability-fabric",
+  "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+  "signature_or_digest": "sha256:16522791fb8e53ac202d27b73096043adf6ad7a01ab1e61580a0d9e2aa6d7d7a",
+  "artifact_refs": [
+    {
+      "schema_version": "v0",
+      "artifact_type": "ExplainQualityReport.v0",
+      "path": "benchmarks/admission/explain_quality_report.pf-explain-quality-admission-v0.v0.json",
+      "sha256": "sha256:26bc5dd43693839e2f7403de8226c262e94f28d54f6da1cef7dc457d3a2de826",
+      "role": "producer_export",
+      "source_repo": "https://github.com/SentinelOps-CI/provability-fabric",
+      "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+      "signature_or_digest": "sha256:c51f9f54ed4d844c52b1e5498f832ccc08e1deaba12c3582c03b69b2e5ecc22d"
+    },
+    {
+      "schema_version": "v0",
+      "artifact_type": "ProfileCoverageReport.v0",
+      "path": "benchmarks/admission/profile_coverage_report.pf-profile-coverage-v0.v0.json",
+      "sha256": "sha256:bf28e9943e1cdfd02a8d68d64279feea1f7abeccff41c87f4086a1034ceac8e1",
+      "role": "producer_export",
+      "source_repo": "https://github.com/SentinelOps-CI/provability-fabric",
+      "source_commit": "17e414501b3e1c58e8fbde1fe89a828440a945d9",
+      "signature_or_digest": "sha256:7485bcfd35a99143469e244b5fc284a64039f6b8bc153d2325df719e244dbed3"
+    }
+  ]
+}
