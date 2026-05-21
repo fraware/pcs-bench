@@ -19,7 +19,7 @@ classifiers = [
 ]
 dependencies = [
     "pydantic>=2.0",
-    "typer>=0.12",
+    "typer>=0.16.0",
     "rich>=13.0",
     "pyyaml>=6.0",
     "jsonschema>=4.0",
@@ -33,7 +33,7 @@ dev = [
 ]
 
 [project.scripts]
-pcs-bench = "pcs_bench.cli:app"
+pcs-bench = "pcs_bench.cli:main_entry"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pcs_bench"]
@@ -47,7 +47,6 @@ only-include = ["src", "benchmarks", "docs", "pcs-bench.yaml", "README.md", "pyp
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 100

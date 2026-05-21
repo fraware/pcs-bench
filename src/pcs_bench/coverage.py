@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any
 
 from pcs_bench.metrics import _load_run_analysis
@@ -26,7 +24,6 @@ def compute_coverage(report: BenchmarkReport) -> dict[str, Any]:
     cert_scores = []
     render_scores = []
     missing_registry: list[str] = []
-    missing_cert_fields: list[str] = []
     missing_sections: list[str] = []
 
     for run in runs:

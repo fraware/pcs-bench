@@ -38,6 +38,9 @@ def _hash_file(path: Path) -> str:
     return f"sha256:{h.hexdigest()}"
 
 
+_FIXTURE_MANIFEST_BASENAME = "fixture_manifest.json"
+
+
 def build_fixture_manifest(config: BenchConfig | None = None) -> FixtureManifest:
     cfg = config or BenchConfig()
     root = cfg.benchmarks_root.resolve()
@@ -49,6 +52,8 @@ def build_fixture_manifest(config: BenchConfig | None = None) -> FixtureManifest
             if ".pcs-bench-workspaces" in str(path):
                 continue
             rel = str(path.relative_to(root))
+            if Path(rel).as_posix() == _FIXTURE_MANIFEST_BASENAME:
+                continue
             entries.append(
                 FixtureEntry(
                     path=rel,

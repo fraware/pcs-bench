@@ -25,21 +25,16 @@ switch ($Target) {
     "test" { Run "$Python -m pytest -q" }
     "bench" { Run "$PcsBench run --suite all --simulate --out reports/latest.json" }
     "ci" {
-        & $PSScriptRoot/make.ps1 manifest
-        Run "$PcsBench run --suite all --simulate --ci --out reports/ci.json"
-        Run "$PcsBench validate-report --input reports/ci.json"
+        & $PSScriptRoot/make.ps1 gate
         Run "$PcsBench report --input reports/ci.json --format markdown --out reports/ci.md"
         Run "$PcsBench report --input reports/ci.json --format html --out reports/ci.html"
     }
     "gate" {
         & $PSScriptRoot/make.ps1 install
-        & $PSScriptRoot/make.ps1 manifest
         Run "$PcsBench gate --out reports/ci.json --out-packet packets/latest"
     }
     "packet" {
         & $PSScriptRoot/make.ps1 ci
-        Run "$PcsBench packet --report reports/ci.json --out packets/latest"
-        Run "$PcsBench verify-packet --packet packets/latest"
     }
     "html" {
         Run "$PcsBench report --input reports/ci.json --format html --out reports/ci.html"

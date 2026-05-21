@@ -8,7 +8,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from pcs_bench.adapters.pcs_core import PcsCoreAdapter
-from pcs_bench.benchmark_vocabulary import normalize_legacy_case_payload
+from pcs_bench.benchmark_vocabulary import (
+    ALLOWED_INPUT_ARTIFACT_KEYS,
+    VALID_CASE_KINDS,
+    normalize_legacy_case_payload,
+)
 from pcs_bench.cases import load_case
 from pcs_bench.config import BenchConfig
 from pcs_bench.report_export import PLACEHOLDER_COMMITS, validate_report_policy
@@ -62,6 +66,30 @@ def validate_case_policy(data: dict) -> list[str]:
         )
     if "expected_system_outcome" not in data:
         errors.append("expected_system_outcome is required")
+
+    status = data.get("expected_status")
+    if status and status not in ("passed", "failed", "skipped", "error"):
+        errors.append(
+            f"expected_status must be passed/failed/skipped/error, got {status!r}"
+        )
+
+    kind = data.get("case_kind")
+    if kind and kind not in VALID_CASE_KINDS:
+        errors.append(f"case_kind {kind!r} is not a pcs-core benchmark_case_kind value")
+
+    for key in artifacts:
+        if key not in ALLOWED_INPUT_ARTIFACT_KEYS:
+            errors.append(f"unknown input_artifacts key: {key!r}")
+
+    for required_field in (
+        "expected_failure_code",
+        "expected_responsible_component",
+        "expected_repair_hint_kind",
+    ):
+        if data.get(required_field) is None:
+            errors.append(
+                f"{required_field} must not be null (use '' or 'unknown'/'none')"
+            )
 
     return errors
 
@@ -166,6 +194,6 @@ def validate_report_json(
 
     report = load_report(report_path)
     runs_dir = report_path.parent / f"{report_path.stem}-runs"
-    data = to_benchmark_report_v0_dict(report, runs_output_dir=runs_dir)
     pcs_core = schema_source or config.repos.pcs_core
+    data = to_benchmark_report_v0_dict(report, runs_output_dir=runs_dir, pcs_core_path=pcs_core)
     return validate_report_data_strict(data, pcs_core)

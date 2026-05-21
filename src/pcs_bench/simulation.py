@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from pcs_bench.benchmark_vocabulary import (
+    RESPONSIBLE_COMPONENT_MAP,
     SYSTEM_ADMITTED,
     SYSTEM_REJECTED,
     system_outcome_from_sidecar,
@@ -48,6 +49,12 @@ def find_case_root(suite_dir: Path, case: BenchmarkCase) -> Path | None:
     return None
 
 
+def _normalize_component(component: str | None) -> str | None:
+    if not component:
+        return component
+    return RESPONSIBLE_COMPONENT_MAP.get(component, component)
+
+
 def load_expected_sidecar(case_root: Path, name: str) -> dict[str, Any]:
     expected = case_root / "expected" / name
     return _load_json(expected)
@@ -62,8 +69,10 @@ def simulate_outcome(case: BenchmarkCase, suite_dir: Path) -> SimulatedOutcome:
                 status=verification.get("status") or case.expected_system_outcome or "",
                 system_outcome=system_outcome_from_sidecar(verification),
                 failure_code=verification.get("failure_code") or case.expected_failure_code,
-                responsible_component=verification.get("responsible_component")
-                or case.expected_responsible_component,
+                responsible_component=_normalize_component(
+                    verification.get("responsible_component")
+                    or case.expected_responsible_component
+                ),
                 repair_hint=_stringify_hint(verification.get("repair_hint")),
                 repair_hint_kind=verification.get("repair_hint_kind")
                 or case.expected_repair_hint_kind,
@@ -77,7 +86,7 @@ def simulate_outcome(case: BenchmarkCase, suite_dir: Path) -> SimulatedOutcome:
         system_outcome=case.expected_system_outcome
         or (SYSTEM_ADMITTED if case.expected_status == "passed" else SYSTEM_REJECTED),
         failure_code=case.expected_failure_code,
-        responsible_component=case.expected_responsible_component,
+        responsible_component=_normalize_component(case.expected_responsible_component),
         repair_hint_kind=case.expected_repair_hint_kind,
         repair_hint=_default_repair_hint(case),
         source="case_expectation",

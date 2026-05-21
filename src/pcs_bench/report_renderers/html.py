@@ -46,16 +46,14 @@ def render_html(
           <td>{html.escape(summary.applicability)}</td>
           <td>{_pct(thr)}</td>
         </tr>"""
-    else:
-        for name, score in sorted(report.metrics.items()):
-            if not isinstance(score, (int, float)):
-                continue
+    elif isinstance(report.metrics, list):
+        for name in sorted(report.metrics):
             thr = thresholds.get(name, 0.9)
             metric_rows += f"""
         <tr>
           <td>{html.escape(name)}</td>
-          <td class="{_metric_class(score, thr)}">{score:.3f}</td>
-          <td>measured</td>
+          <td class="">n/a</td>
+          <td>listed</td>
           <td>{_pct(thr)}</td>
         </tr>"""
 

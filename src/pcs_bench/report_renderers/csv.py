@@ -24,10 +24,9 @@ def render_csv(report: BenchmarkReport) -> str:
             writer.writerow(
                 ["metric", summary.name, score_val, summary.applicability, summary.reason or ""]
             )
-    else:
-        for name, score in sorted(report.metrics.items()):
-            if isinstance(score, (int, float)):
-                writer.writerow(["metric", name, f"{score:.4f}", "measured", ""])
+    elif isinstance(report.metrics, list):
+        for name in sorted(report.metrics):
+            writer.writerow(["metric", name, "", "listed", ""])
 
     writer.writerow([])
     writer.writerow(

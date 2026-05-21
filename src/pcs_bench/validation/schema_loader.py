@@ -49,6 +49,12 @@ def _find_schema_file(pcs_core: Path, filename: str) -> Path | None:
     return None
 
 
+def _uses_legacy_metric_summary_ref(schema: dict) -> bool:
+    from pcs_bench.schema_sync import uses_legacy_metric_summary_ref
+
+    return uses_legacy_metric_summary_ref(schema)
+
+
 def load_artifact_schema(pcs_core_path: Path, artifact_name: str) -> dict | None:
     """Load BenchmarkCase.v0.schema.json style artifact schema."""
     primary = _ARTIFACT_SCHEMA_FILES.get(artifact_name, [f"{artifact_name}.schema.json"])[0]
@@ -59,7 +65,12 @@ def load_artifact_schema(pcs_core_path: Path, artifact_name: str) -> dict | None
             path = fallback
     if not path:
         return None
-    return json.loads(path.read_text(encoding="utf-8"))
+    schema = json.loads(path.read_text(encoding="utf-8"))
+    if artifact_name == "BenchmarkReport.v0" and _uses_legacy_metric_summary_ref(schema):
+        embedded = _embedded_schema_path(artifact_name)
+        if embedded.exists():
+            return json.loads(embedded.read_text(encoding="utf-8"))
+    return schema
 
 
 @lru_cache(maxsize=16)

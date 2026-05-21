@@ -53,33 +53,31 @@ jobs:
       - name: Install pcs-bench
         run: pip install -e ".[dev]"
 
-      - name: Materialize fixtures
-        run: python scripts/materialize_fixtures.py
+      - name: Checkout pcs-core schemas
+        uses: actions/checkout@v4
+        with:
+          repository: SentinelOps-CI/pcs-core
+          path: pcs-core
+        continue-on-error: true
 
-      - name: Verify fixture manifest integrity
+      - name: Sync embedded schemas
+        run: python scripts/sync_pcs_core_schema.py --pcs-core pcs-core
+        continue-on-error: true
+
+      - name: Run simulate release gate
+        shell: bash
         run: |
-          python -m pcs_bench verify-fixtures --write
-          python -m pcs_bench verify-fixtures
-
-      - name: Validate all benchmark cases
-        run: python -m pcs_bench validate-cases --suite all --dry-run
-
-      - name: Run full benchmark (simulate + CI)
-        run: python -m pcs_bench run --suite all --simulate --ci --out reports/ci.json
-
-      - name: Validate BenchmarkReport.v0
-        run: python -m pcs_bench validate-report --input reports/ci.json
+          if [ -d pcs-core/schemas ]; then
+            python -m pcs_bench gate --suite all --out reports/ci.json --out-packet packets/ci --pcs-core pcs-core
+          else
+            python -m pcs_bench gate --suite all --out reports/ci.json --out-packet packets/ci
+          fi
 
       - name: Generate reports
         run: |
           python -m pcs_bench report --input reports/ci.json --format markdown --out reports/ci.md
           python -m pcs_bench report --input reports/ci.json --format html --out reports/ci.html
           python -m pcs_bench report --input reports/ci.json --format csv --out reports/ci.csv
-
-      - name: Export and verify reviewer packet
-        run: |
-          python -m pcs_bench packet --report reports/ci.json --out packets/ci
-          python -m pcs_bench verify-packet --packet packets/ci
 
       - name: Upload benchmark artifacts
         uses: actions/upload-artifact@v4

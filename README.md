@@ -53,6 +53,9 @@ pcs-bench list-suites
 # Strict BenchmarkReport.v0 validation (pcs-core schema)
 pcs-bench validate-report --input reports/ci.json --pcs-core ../pcs-core
 
+# Normalize producer-native benchmark output
+pcs-bench ingest-producer-output --producer certifyedge --input ../CertifyEdge/benchmark_runs/tool_use_safety --out reports/certifyedge-normalized.json
+
 # Release-grade evidence (live adapters required for live_required suites)
 pcs-bench run --suite all --live --ci --out reports/release.json
 

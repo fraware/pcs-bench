@@ -62,7 +62,7 @@ def export_benchmark_packet(
             compare_reports(load_report(baseline_path), report)
         )
 
-    payload = to_benchmark_report_v0_dict(report)
+    payload = to_benchmark_report_v0_dict(report, pcs_core_path=cfg.repos.pcs_core)
     (out_dir / "BenchmarkReport.v0.json").write_text(
         json.dumps(payload, indent=2, default=str),
         encoding="utf-8",

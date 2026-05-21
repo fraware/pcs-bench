@@ -58,13 +58,15 @@ class AdapterRegistry:
             )
 
     def repo_commits(self) -> RepoCommits:
+        from pcs_bench.report_export import pcs_bench_source_commit
+
         return RepoCommits(
             pcs_core=self.pcs_core.version_or_commit(),
             labtrust=self.labtrust.version_or_commit(),
             certifyedge=self.certifyedge.version_or_commit(),
             provability_fabric=self.pf.version_or_commit(),
             scientific_memory=self.scientific_memory.version_or_commit(),
-            pcs_bench="local",
+            pcs_bench=pcs_bench_source_commit(),
         )
 
 

@@ -10,8 +10,6 @@ from pathlib import Path
 from typing import Any
 
 from pcs_bench.benchmark_vocabulary import (
-    BENCHMARK_FAILED,
-    BENCHMARK_PASSED,
     KNOWN_METRIC_IDS,
     benchmark_status_for_run,
 )
@@ -19,6 +17,8 @@ from pcs_bench.schemas import BenchmarkReport, BenchmarkRun, MetricSummary
 
 PCS_BENCH_SOURCE_REPO = "https://github.com/fraware/pcs-bench"
 PLACEHOLDER_COMMITS = frozenset({"placeholder", "unknown", "deadbeef"})
+
+_PKG_ROOT = Path(__file__).resolve().parent
 
 
 def pcs_bench_source_commit() -> str:
@@ -64,20 +64,19 @@ def _summary_scores(report: BenchmarkReport) -> dict[str, float]:
     return scores
 
 
+def _export_coverage_block(report: BenchmarkReport) -> dict[str, Any]:
+    """pcs-core coverage block uses CoverageReport.v0 refs; harness aggregates stay internal."""
+    _ = report
+    return {}
+
+
 def _build_pcs_summary(report: BenchmarkReport) -> dict[str, Any]:
     scores = _summary_scores(report)
-    invalid = [r for r in report.runs if not is_valid_release_case_run(r)]
-    localized = [
-        r
-        for r in invalid
-        if r.expected_responsible_component
-        and r.observed_responsible_component == r.expected_responsible_component
-    ]
     passed = sum(1 for r in report.runs if r.passed)
     failed = len(report.runs) - passed
     inner = report.summary
 
-    return {
+    summary: dict[str, Any] = {
         "total_cases": len(report.runs),
         "passed_cases": passed,
         "failed_cases": failed,
@@ -95,21 +94,25 @@ def _build_pcs_summary(report: BenchmarkReport) -> dict[str, Any]:
         "scientific_memory_render_coverage": scores.get(
             "scientific_memory_interpretability_score", 0.0
         ),
-        "release_reproducibility_score": scores.get("release_reproducibility_score"),
-        "certificate_completeness_score": scores.get("certificate_completeness_score"),
-        "registry_coverage_score": scores.get("registry_coverage_score"),
-        "formal_check_coverage_score": scores.get("formal_check_coverage_score"),
-        "scientific_memory_interpretability_score": scores.get(
-            "scientific_memory_interpretability_score"
-        ),
-        "repair_hint_quality_score": scores.get("repair_hint_quality_score"),
-        "cross_domain_portability_score": scores.get("cross_domain_portability_score"),
         "execution_mode": inner.get("execution_mode", "simulate"),
         "evidence_grade": inner.get("evidence_grade", "developer"),
         "live_cases": int(inner.get("live_cases", 0)),
         "simulated_cases": int(inner.get("simulated_cases", 0)),
         "hybrid_fallback_cases": int(inner.get("hybrid_fallback_cases", 0)),
     }
+    for key in (
+        "release_reproducibility_score",
+        "certificate_completeness_score",
+        "registry_coverage_score",
+        "formal_check_coverage_score",
+        "scientific_memory_interpretability_score",
+        "repair_hint_quality_score",
+        "cross_domain_portability_score",
+    ):
+        value = scores.get(key)
+        if value is not None:
+            summary[key] = value
+    return summary
 
 
 def is_valid_release_case_run(run: BenchmarkRun) -> bool:
@@ -142,6 +145,53 @@ def _metric_summaries_export(summaries: list[MetricSummary]) -> list[dict[str, A
     return out
 
 
+def metrics_contract(pcs_core_path: Path | None = None) -> str:
+    """Detect pcs-core BenchmarkReport metrics shape: metrics_array or metrics_object."""
+    from pcs_bench.validation.schema_loader import load_artifact_schema
+
+    root = pcs_core_path if pcs_core_path and (pcs_core_path / "schemas").is_dir() else _PKG_ROOT
+    schema = load_artifact_schema(root, "BenchmarkReport.v0") or {}
+    metrics_prop = schema.get("properties", {}).get("metrics", {})
+    if metrics_prop.get("type") == "array":
+        return "metrics_array"
+    if metrics_prop.get("type") == "object":
+        return "metrics_object"
+    return "unknown"
+
+
+def export_metrics_for_pcs_core(
+    report: BenchmarkReport,
+    pcs_core_path: Path | None = None,
+    *,
+    schema_version: str = "v0",
+) -> dict[str, Any]:
+    """Export metrics block matching the pcs-core BenchmarkReport schema (no silent invalid JSON)."""
+    del schema_version  # v0 only today; reserved for future schema forks
+    contract = metrics_contract(pcs_core_path)
+    names = _metrics_name_list(report.metric_summaries)
+    summaries = _metric_summaries_export(report.metric_summaries)
+
+    if contract == "metrics_object":
+        raise ValueError(
+            "pcs-core BenchmarkReport.v0 expects metrics as an object in this checkout, "
+            "but pcs-bench exports metrics as an array of benchmark_metric_id values. "
+            "Upgrade pcs-core or sync schemas."
+        )
+    if contract not in ("metrics_array", "unknown"):
+        raise ValueError(f"Unsupported metrics contract: {contract}")
+
+    from pcs_bench.validation.schema_loader import load_artifact_schema
+
+    root = pcs_core_path if pcs_core_path and (pcs_core_path / "schemas").is_dir() else _PKG_ROOT
+    schema = load_artifact_schema(root, "BenchmarkReport.v0") or {}
+    props = schema.get("properties", {})
+    required = set(schema.get("required", []))
+    block: dict[str, Any] = {"metrics": names or list(KNOWN_METRIC_IDS)}
+    if "metric_summaries" in props or "metric_summaries" in required:
+        block["metric_summaries"] = summaries
+    return block
+
+
 def _metrics_name_list(summaries: list[MetricSummary]) -> list[str]:
     names: list[str] = []
     for s in summaries:
@@ -168,6 +218,11 @@ def _export_run_record(
         "run_id": run.run_id,
         "task_id": run.task_id or run.case_id,
         "case_id": run.case_id,
+        "suite_id": run.suite_id,
+        "expected_status": run.expected_status,
+        "expected_system_outcome": run.expected_system_outcome,
+        "expected_failure_code": run.expected_failure_code or "",
+        "benchmark_passed": run.passed,
         "started_at": started,
         "completed_at": started,
         "commands": [
@@ -179,6 +234,7 @@ def _export_run_record(
         ],
         "artifacts_produced": [a for a in run.artifacts if a][:100],
         "observed_status": bench_status,
+        "observed_system_outcome": run.observed_system_outcome or "",
         "observed_failure_code": run.observed_failure_code or "",
         "observed_responsible_component": run.observed_responsible_component or "unknown",
         "observed_repair_hint": run.observed_repair_hint or "unknown",
@@ -229,11 +285,13 @@ def to_benchmark_report_v0_dict(
     report: BenchmarkReport,
     *,
     runs_output_dir: Path | None = None,
+    pcs_core_path: Path | None = None,
 ) -> dict[str, Any]:
     """Canonical pcs-core BenchmarkReport.v0 JSON object."""
     report = enrich_report_for_export(report)
     runs_dir = runs_output_dir or Path("runs")
     source_commit = report.source_commit or pcs_bench_source_commit()
+    metrics_block = export_metrics_for_pcs_core(report, pcs_core_path)
 
     return {
         "schema_version": "v0",
@@ -248,10 +306,9 @@ def to_benchmark_report_v0_dict(
             )
             for run in report.runs
         ],
-        "metrics": _metrics_name_list(report.metric_summaries),
-        "metric_summaries": _metric_summaries_export(report.metric_summaries),
+        **metrics_block,
         "summary": _build_pcs_summary(report),
-        "coverage": report.coverage if report.coverage else {},
+        "coverage": _export_coverage_block(report),
         "failures": _failures_export(report),
         "source_repo": report.source_repo,
         "source_commit": source_commit,
@@ -272,9 +329,18 @@ def validate_report_policy(data: dict) -> list[str]:
     if not digest or not str(digest).startswith("sha256:") or len(str(digest)) != 71:
         errors.append("signature_or_digest must be sha256:<64 hex chars>")
 
-    for name in data.get("metrics", []):
-        if name not in KNOWN_METRIC_IDS:
-            errors.append(f"Unrecognized metric name in metrics array: {name}")
+    metrics = data.get("metrics")
+    if isinstance(metrics, dict):
+        errors.append(
+            "metrics must be an array of benchmark_metric_id names, not an object "
+            "(use metric_summaries for scores and applicability)"
+        )
+    elif isinstance(metrics, list):
+        for name in metrics:
+            if name not in KNOWN_METRIC_IDS:
+                errors.append(f"Unrecognized metric name in metrics array: {name}")
+    else:
+        errors.append("metrics must be a non-empty array")
 
     for entry in data.get("metric_summaries", []):
         if entry.get("name") not in KNOWN_METRIC_IDS:

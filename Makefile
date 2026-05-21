@@ -23,13 +23,11 @@ test:
 bench:
 	$(PCS_BENCH) run --suite all --simulate --out reports/latest.json
 
-ci: install manifest
-	$(PCS_BENCH) run --suite all --simulate --ci --out reports/ci.json
-	$(PCS_BENCH) validate-report --input reports/ci.json
+ci: gate
 	$(PCS_BENCH) report --input reports/ci.json --format markdown --out reports/ci.md
 	$(PCS_BENCH) report --input reports/ci.json --format html --out reports/ci.html
 
-gate: install manifest
+gate: install
 	$(PCS_BENCH) gate --out reports/ci.json --out-packet packets/latest
 
 packet: ci

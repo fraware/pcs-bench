@@ -29,8 +29,8 @@ def render_markdown(report: BenchmarkReport, comparison_text: str = "") -> str:
             "",
             "## Repo commits tested",
             "",
-            f"| Repo | Commit |",
-            f"|------|--------|",
+            "| Repo | Commit |",
+            "|------|--------|",
         ]
     )
     rc = report.repo_commits
@@ -46,12 +46,9 @@ def render_markdown(report: BenchmarkReport, comparison_text: str = "") -> str:
         for summary in sorted(report.metric_summaries, key=lambda s: s.name):
             score_txt = f"{summary.score:.3f}" if summary.score is not None else "n/a"
             lines.append(f"| {summary.name} | {score_txt} | {summary.applicability} |")
-    else:
-        for name, score in sorted(report.metrics.items()):
-            if isinstance(score, (int, float)):
-                lines.append(f"| {name} | {score:.3f} | measured |")
-            else:
-                lines.append(f"| {name} | n/a | n/a |")
+    elif isinstance(report.metrics, list):
+        for name in sorted(report.metrics):
+            lines.append(f"| {name} | n/a | listed |")
     lines.append("")
 
     if report.coverage:
@@ -79,7 +76,6 @@ def render_markdown(report: BenchmarkReport, comparison_text: str = "") -> str:
         lines.append(f"- **{s}:** {passed}/{len(suite_runs)} passed")
     lines.append("")
 
-    workflows = sorted({r.case_id.split("-")[0] for r in report.runs})
     lines.extend(["## Per-suite results", ""])
     for r in report.runs:
         status = "PASS" if r.passed else "FAIL"
@@ -124,10 +120,8 @@ def render_markdown(report: BenchmarkReport, comparison_text: str = "") -> str:
             if summary.reason:
                 lines.append(f"- {summary.reason}")
                 lines.append("")
-        else:
-            score = report.metrics.get(metric_name)
-            if isinstance(score, (int, float)):
-                lines.extend([f"## {section_title}", "", f"Score: **{score:.3f}**", ""])
+        elif isinstance(report.metrics, list) and metric_name in report.metrics:
+            lines.extend([f"## {section_title}", "", "Score: **n/a** (listed only)", ""])
 
     if comparison_text:
         lines.extend(["## Regressions versus baseline", "", comparison_text, ""])

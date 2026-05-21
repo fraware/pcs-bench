@@ -13,7 +13,12 @@ from rich.table import Table
 from pcs_bench import __version__
 from pcs_bench.adapters.base import AdapterStatus
 from pcs_bench.baselines import compare_reports, format_comparison_text
-from pcs_bench.ci import check_ci_thresholds, check_live_required, format_ci_failure
+from pcs_bench.ci import (
+    check_ci_thresholds,
+    check_live_required,
+    check_repo_commits_resolved,
+    format_ci_failure,
+)
 from pcs_bench.config import ALL_SUITES, SUITE_ALIASES, BenchConfig
 from pcs_bench.errors import PcsBenchError, ThresholdViolationError
 from pcs_bench.coverage import apply_coverage_to_report
@@ -48,12 +53,20 @@ def _alias_for_internal(name: str) -> str:
     return name
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
-    version: bool = typer.Option(False, "--version", "-V", help="Show version and exit."),
+    ctx: typer.Context,
+    version: bool = typer.Option(
+        False,
+        "--version",
+        help="Show version and exit.",
+    ),
 ) -> None:
-    if version:
+    if version is True:
         console.print(f"pcs-bench {__version__}")
+        raise typer.Exit(0)
+    if ctx.invoked_subcommand is None:
+        console.print(ctx.get_help())
         raise typer.Exit(0)
 
 
@@ -124,10 +137,11 @@ def run_cmd(
     ci: bool = typer.Option(False, "--ci", help="Fail on threshold violations."),
     verbose: bool = typer.Option(False, "--verbose"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Skip CLI and artifact analysis."),
+    live: bool = typer.Option(False, "--live", help="Invoke live ecosystem CLIs."),
     simulate: bool = typer.Option(
         True,
-        "--simulate/--live",
-        help="Simulate from fixture sidecars (default) or invoke live CLIs.",
+        "--simulate",
+        help="Use fixture sidecars (default). Ignored when --live is set.",
     ),
     hybrid: bool = typer.Option(
         False,
@@ -173,6 +187,8 @@ def run_cmd(
         console.print("[yellow]Dry run — planning only[/yellow]")
     elif hybrid:
         console.print("[cyan]Hybrid mode — live CLIs with fixture fallback[/cyan]")
+    elif live:
+        console.print("[green]Live mode — invoking ecosystem CLIs[/green]")
     elif simulate:
         console.print("[cyan]Simulate mode — fixture sidecars + artifact analysis[/cyan]")
     else:
@@ -187,7 +203,8 @@ def run_cmd(
         cfg.benchmarks_root, suite_names
     )
 
-    if ci and live_required_suites and simulate and not dry_run:
+    use_simulate = simulate and not live
+    if ci and live_required_suites and use_simulate and not dry_run:
         console.print(
             "[red]CI with live_required suites requires --live (not --simulate)[/red]"
         )
@@ -206,9 +223,9 @@ def run_cmd(
             suite_dir,
             ws,
             dry_run=dry_run,
-            simulate=simulate and not dry_run and not hybrid,
+            simulate=use_simulate and not dry_run and not hybrid,
             hybrid=hybrid and not dry_run,
-            require_live=not simulate and not dry_run and not hybrid,
+            require_live=live and not dry_run and not hybrid,
             fail_fast=fail_fast,
             case_filter=case_filter,
             console=console,
@@ -254,22 +271,22 @@ def run_cmd(
     apply_metrics_to_report(final_report, summaries)
     apply_coverage_to_report(final_report)
 
-    is_live = not dry_run and not simulate and not hybrid
+    is_live = live and not dry_run and not hybrid
     final_report.summary["execution_mode"] = (
         "live" if is_live else ("hybrid" if hybrid else ("dry_run" if dry_run else "simulate"))
     )
     final_report.summary["evidence_grade"] = "release" if (ci and is_live) else "developer"
     if is_live:
         final_report.dry_run = False
-    elif simulate or hybrid or dry_run:
+    elif use_simulate or hybrid or dry_run:
         final_report.dry_run = True
 
-    save_report(final_report, out)
+    save_report(final_report, out, pcs_core_path=cfg.repos.pcs_core)
     console.print(f"\n[green]Report written to[/green] {out}")
 
     from pcs_bench.validation import validate_report_json
 
-    report_errors = validate_report_json(out, cfg)
+    report_errors = validate_report_json(out, cfg, schema_source=cfg.repos.pcs_core)
     if report_errors:
         for err in report_errors:
             console.print(f"  [red]schema[/red] {err}")
@@ -292,6 +309,8 @@ def run_cmd(
             live_required_suites,
             release_grade=final_report.summary.get("evidence_grade") == "release",
         )
+        if is_live:
+            live_errors.extend(check_repo_commits_resolved(final_report))
         if live_errors:
             for msg in live_errors:
                 console.print(f"[red]{msg}[/red]")
@@ -436,12 +455,17 @@ def gate_cmd(
     out: Path = typer.Option(Path("reports/ci.json"), "--out"),
     packet_dir: Path = typer.Option(Path("packets/latest"), "--out-packet", "--packet"),
     suite: str = typer.Option("all", "--suite"),
-    simulate: bool = typer.Option(True, "--simulate/--live", help="Simulate (default) or live."),
+    live: bool = typer.Option(False, "--live", help="Run benchmark gate in live mode."),
+    pcs_core: Optional[Path] = typer.Option(
+        None,
+        "--pcs-core",
+        help="pcs-core checkout for schema validation (overrides pcs-bench.yaml).",
+    ),
 ) -> None:
     """Run full release gate: fixtures, manifest, cases, benchmark, report validation, packet."""
     import subprocess
 
-    cfg = _load_config(config)
+    cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
     root = Path.cwd()
     py = sys.executable
 
@@ -452,10 +476,10 @@ def gate_cmd(
         ([py, "-m", "pcs_bench", "validate-cases", "--suite", suite, "--dry-run"], "validate cases"),
     ]
     run_args = [py, "-m", "pcs_bench", "run", "--suite", suite, "--ci", "--out", str(out)]
-    if simulate:
-        run_args.append("--simulate")
-    else:
+    if live:
         run_args.append("--live")
+    else:
+        run_args.append("--simulate")
     steps.append((run_args, "benchmark run"))
     validate_report_cmd = [py, "-m", "pcs_bench", "validate-report", "--input", str(out)]
     pcs_core_path = cfg.repos.pcs_core
@@ -594,6 +618,46 @@ def validate_cases_cmd(
 
     if not all_valid:
         raise typer.Exit(1)
+
+
+@app.command("ingest-producer-output")
+def ingest_producer_output_cmd(
+    producer: str = typer.Option(..., "--producer", help="Producer id (certifyedge, provability-fabric, scientific-memory)."),
+    input: Path = typer.Option(..., "--input", help="Producer benchmark_runs directory."),
+    out: Path = typer.Option(..., "--out", help="Normalized BenchmarkReport.v0 output path."),
+    suite: Optional[str] = typer.Option(None, "--suite", help="Override benchmark_suite_id."),
+    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    config: Optional[Path] = typer.Option(None, "--config"),
+) -> None:
+    """Normalize a producer-native benchmark report into pcs-bench BenchmarkReport.v0."""
+    from pcs_bench.producer_ingest import ingest_producer_output
+
+    cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
+    try:
+        report = ingest_producer_output(
+            producer,
+            input,
+            out,
+            pcs_core_path=cfg.repos.pcs_core,
+            suite_id=suite,
+        )
+    except (ValueError, FileNotFoundError) as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(1) from exc
+
+    from pcs_bench.validation import validate_report_json
+
+    errors = validate_report_json(out, cfg, schema_source=cfg.repos.pcs_core)
+    if errors:
+        console.print("[red]Ingested report failed validation:[/red]")
+        for err in errors:
+            console.print(f"  - {err}")
+        raise typer.Exit(1)
+
+    console.print(
+        f"[green]Wrote normalized report[/green] {out} "
+        f"({len(report.runs)} runs, suite={report.benchmark_suite_id})"
+    )
 
 
 @app.command("explain")

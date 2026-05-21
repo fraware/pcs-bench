@@ -25,3 +25,30 @@ def test_sync_copies_when_pcs_core_present(tmp_path: Path) -> None:
     result = sync_schemas_from_pcs_core(tmp_path / "pcs-core", dest_dir=dest)
     assert "BenchmarkReport.v0" in result.copied
     assert (dest / "BenchmarkReport.v0.json").read_text(encoding="utf-8") == json.dumps(schema)
+
+
+def test_sync_inlines_legacy_metric_summary_ref(tmp_path: Path) -> None:
+    import json
+
+    from pcs_bench.schema_sync import uses_legacy_metric_summary_ref
+
+    src = tmp_path / "pcs-core" / "schemas"
+    src.mkdir(parents=True)
+    dest = tmp_path / "out"
+    legacy = {
+        "title": "BenchmarkReport.v0",
+        "type": "object",
+        "properties": {
+            "metric_summaries": {
+                "type": "array",
+                "items": {"$ref": "MetricSummary.v0.schema.json"},
+            }
+        },
+        "$defs": {},
+    }
+    (src / "BenchmarkReport.v0.schema.json").write_text(json.dumps(legacy), encoding="utf-8")
+    result = sync_schemas_from_pcs_core(tmp_path / "pcs-core", dest_dir=dest)
+    assert "BenchmarkReport.v0.inline_metric_summary" in result.copied
+    patched = json.loads((dest / "BenchmarkReport.v0.json").read_text(encoding="utf-8"))
+    assert not uses_legacy_metric_summary_ref(patched)
+    assert "metric_summary" in patched["$defs"]

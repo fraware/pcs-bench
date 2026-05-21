@@ -375,7 +375,36 @@
         "stale",
         "import_failed",
         "render_failed",
-        "formal_failed"
+        "query_failed",
+        "comparison_failed",
+        "formal_failed",
+        "certificate_rejected",
+        "unknown"
+      ]
+    },
+    "nullable_benchmark_system_outcome": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/benchmark_system_outcome" }
+      ]
+    },
+    "benchmark_detection_layer": {
+      "type": "string",
+      "enum": [
+        "runtime",
+        "certificate",
+        "verifier",
+        "registry",
+        "formal_kernel",
+        "scientific_memory",
+        "release_manifest",
+        "handoff",
+        "hashing",
+        "labtrust",
+        "certifyedge",
+        "provability_fabric",
+        "pcs_core",
+        "unknown"
       ]
     },
     "metric_summary_applicability": {

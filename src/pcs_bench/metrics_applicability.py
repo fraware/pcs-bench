@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pcs_bench.schemas import BenchmarkRun, MetricSummary
+from pcs_bench.schemas import MetricSummary
 
 APPLICABILITY_MEASURED = "measured"
 APPLICABILITY_NOT_APPLICABLE = "not_applicable"

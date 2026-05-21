@@ -287,9 +287,13 @@ def _merge_verification_dict(ctx: CaseExecutionContext, data: dict) -> None:
     ctx.observed.status = data.get("status") or data.get("admission_status") or ctx.observed.status
     ctx.observed.system_outcome = system_outcome_from_sidecar(data)
     ctx.observed.failure_code = data.get("failure_code") or data.get("code") or ctx.observed.failure_code
-    ctx.observed.responsible_component = (
-        data.get("responsible_component") or ctx.observed.responsible_component
-    )
+    from pcs_bench.benchmark_vocabulary import RESPONSIBLE_COMPONENT_MAP
+
+    raw_component = data.get("responsible_component") or ctx.observed.responsible_component
+    if raw_component:
+        ctx.observed.responsible_component = RESPONSIBLE_COMPONENT_MAP.get(
+            raw_component, raw_component
+        )
     hint = data.get("repair_hint") or data.get("repair_hint_kind")
     if hint:
         ctx.observed.repair_hint = hint if isinstance(hint, str) else json.dumps(hint)

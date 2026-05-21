@@ -1,7 +1,5 @@
 """Unit tests for reports and baselines."""
 
-from pathlib import Path
-
 from pcs_bench.baselines import compare_reports
 from pcs_bench.reports import load_report, save_report
 from pcs_bench.schemas import BenchmarkReport, BenchmarkRun, MetricSummary, RepoCommits
@@ -31,6 +29,70 @@ def test_save_and_load_report(tmp_path):
     loaded = load_report(path)
     assert loaded.report_id == report.report_id
     assert loaded.signature_or_digest is not None
+
+
+def test_load_v0_export_preserves_invalid_case_expectations(tmp_path):
+    """Round-trip through BenchmarkReport.v0 export must keep harness pass/fail semantics."""
+    report = BenchmarkReport(
+        benchmark_suite_id="labtrust-qc-release-v0",
+        runs=[
+            BenchmarkRun(
+                run_id="r1",
+                case_id="labtrust-valid-release-v0",
+                suite_id="labtrust-qc-release-v0",
+                expected_status="passed",
+                expected_system_outcome="admitted",
+                observed_status="passed",
+                observed_system_outcome="admitted",
+                passed=True,
+            ),
+            BenchmarkRun(
+                run_id="r2",
+                case_id="labtrust-trace-hash-tamper-v0",
+                suite_id="labtrust-qc-release-v0",
+                expected_status="failed",
+                expected_system_outcome="rejected",
+                observed_status="failed",
+                observed_system_outcome="rejected",
+                expected_failure_code="trace_hash_mismatch",
+                observed_failure_code="trace_hash_mismatch",
+                observed_responsible_component="runtime_producer",
+                expected_responsible_component="runtime_producer",
+                passed=True,
+            ),
+        ],
+        metric_summaries=[
+            MetricSummary(name="failure_localization_accuracy", score=1.0, applicability="measured"),
+        ],
+    )
+    path = tmp_path / "report.json"
+    save_report(report, path)
+    loaded = load_report(path)
+    tamper = next(r for r in loaded.runs if r.case_id == "labtrust-trace-hash-tamper-v0")
+    assert tamper.expected_status == "failed"
+    assert tamper.passed is True
+    assert tamper.observed_failure_code == "trace_hash_mismatch"
+
+
+def test_load_v0_failures_use_harness_failure_records(tmp_path):
+    from pcs_bench.schemas import FailureRecord
+
+    report = BenchmarkReport(
+        failures=[
+            FailureRecord(
+                case_id="c1",
+                suite_id="s1",
+                reason="expected failed, observed rejected",
+            )
+        ],
+        runs=[],
+        metric_summaries=[],
+    )
+    path = tmp_path / "report.json"
+    save_report(report, path)
+    loaded = load_report(path)
+    assert len(loaded.failures) == 1
+    assert loaded.failures[0].reason == "expected failed, observed rejected"
 
 
 def test_compare_detects_regression():

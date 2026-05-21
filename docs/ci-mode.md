@@ -21,8 +21,8 @@ pcs-bench gate
 
 CI mode exits non-zero when:
 
-- A valid release is rejected
-- An invalid release is accepted
+- A valid release is rejected (`valid_release_rejected`)
+- An invalid release is not detected (`invalid_release_not_detected`)
 - Any **measured** metric score falls below its threshold in `pcs-bench.yaml`
 - A **required** metric could not be measured (`failed_to_measure`)
 - The emitted report fails `BenchmarkReport.v0` validation

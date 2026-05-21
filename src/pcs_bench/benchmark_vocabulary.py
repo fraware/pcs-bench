@@ -19,6 +19,29 @@ SYSTEM_FORMAL_FAILED = "formal_failed"
 LEGACY_ADMITTED = frozenset({"Admitted", "Accepted"})
 LEGACY_REJECTED = frozenset({"Rejected"})
 
+VALID_CASE_KINDS = frozenset(
+    {
+        "valid_release",
+        "invalid_hash_mismatch",
+        "invalid_certificate",
+        "invalid_handoff",
+        "invalid_registry",
+        "invalid_formal_check",
+        "invalid_import",
+        "invalid_render",
+        "stale_release",
+    }
+)
+
+ALLOWED_INPUT_ARTIFACT_KEYS = frozenset(
+    {
+        "release_directory",
+        "case_manifest_path",
+        "artifacts",
+        "conformance_suite",
+    }
+)
+
 KNOWN_METRIC_IDS = frozenset(
     {
         "release_reproducibility_score",

@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 from pcs_bench.benchmark_vocabulary import (
-    BENCHMARK_FAILED,
-    BENCHMARK_PASSED,
     is_invalid_release_case,
     is_valid_release_case,
 )
 from pcs_bench.config import BenchConfig
 from pcs_bench.errors import ThresholdViolationError
-from pcs_bench.schemas import BenchmarkReport, MetricSummary
+from pcs_bench.schemas import BenchmarkReport
 
 
 def check_ci_thresholds(
@@ -58,9 +56,9 @@ def check_ci_thresholds(
             )
 
     for run in report.runs:
-        if is_invalid_release_case(run.expected_status, run.expected_system_outcome) and run.passed:
+        if is_invalid_release_case(run.expected_status, run.expected_system_outcome) and not run.passed:
             violations.append(
-                ThresholdViolationError("invalid_release_accepted", 0.0, 1.0, [run.case_id])
+                ThresholdViolationError("invalid_release_not_detected", 0.0, 1.0, [run.case_id])
             )
 
     return violations
@@ -101,6 +99,17 @@ def check_live_required(
         elif live_cases == 0:
             errors.append(
                 f"Suite {suite_id} is marked live_required_for_release but no cases ran live"
+            )
+    return errors
+
+
+def check_repo_commits_resolved(report: BenchmarkReport) -> list[str]:
+    """Fail live/release runs when sibling repo commits could not be resolved."""
+    errors: list[str] = []
+    for name, commit in report.repo_commits.model_dump().items():
+        if commit in ("unknown", "placeholder", "local") or len(str(commit)) != 40:
+            errors.append(
+                f"Could not resolve 40-char git commit for {name} (got {commit!r})"
             )
     return errors
 

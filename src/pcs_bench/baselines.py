@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pcs_bench.reports import load_report
 from pcs_bench.schemas import BenchmarkReport
 
 

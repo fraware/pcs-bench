@@ -86,7 +86,9 @@ def _minimal_report(tmp_path: Path, **overrides) -> dict:
         failures=[],
     )
     report.finalize(digest=report_digest(report))
-    data = to_benchmark_report_v0_dict(report, runs_output_dir=tmp_path / "runs")
+    data = to_benchmark_report_v0_dict(
+        report, runs_output_dir=tmp_path / "runs", pcs_core_path=_pcs_core()
+    )
     data.update(overrides)
     return data
 

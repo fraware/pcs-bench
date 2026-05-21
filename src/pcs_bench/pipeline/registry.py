@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import shutil
 from pathlib import Path
 
 from pcs_bench.benchmark_vocabulary import BENCHMARK_FAILED, BENCHMARK_PASSED
 
-from pcs_bench.artifacts import discover_release_layout
 from pcs_bench.cases import case_input_dir
 from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.pipeline.stages import (
@@ -92,8 +90,6 @@ def _case_passed(
     observed_component: str | None,
 ) -> bool:
     from pcs_bench.benchmark_vocabulary import (
-        BENCHMARK_FAILED,
-        BENCHMARK_PASSED,
         is_invalid_release_case,
         is_valid_release_case,
     )
