@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       run_live:
-        description: Run pcs-bench suites in live mode
+        description: Run producer gate in live mode (no fixture fallback)
         type: boolean
-        default: true
+        default: false
 
 jobs:
   producer-ingest-validate:
@@ -38,9 +38,46 @@ jobs:
       - name: Validate producer fixtures
         run: python scripts/validate_producer_ingest_fixtures.py --pcs-core pcs-core
 
-  producer-full-gate:
+  producer-offline-gate:
     runs-on: ubuntu-latest
     needs: producer-ingest-validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: SentinelOps-CI/pcs-core
+          path: pcs-core
+        continue-on-error: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pcs-bench
+        run: pip install -e ".[dev]"
+
+      - name: Offline producer gate (fixtures)
+        run: |
+          python -m pcs_bench gate --suite all --simulate \
+            --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke \
+            --out reports/producer-gate-offline.json \
+            --out-packet packets/producer-gate-offline \
+            --pcs-core pcs-core
+
+      - name: Upload offline gate artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcs-producer-gate-offline
+          path: |
+            reports/producer-gate-offline.json
+            reports/producer_merge_manifest.v0.json
+            packets/producer-gate-offline
+
+  producer-live-gate:
+    runs-on: ubuntu-latest
+    needs: producer-ingest-validate
+    if: inputs.run_live == true
     steps:
       - uses: actions/checkout@v4
 
@@ -53,25 +90,21 @@ jobs:
         with:
           repository: fraware/LabTrust-Gym
           path: LabTrust-Gym
-        continue-on-error: true
 
       - uses: actions/checkout@v4
         with:
           repository: fraware/CertifyEdge
           path: CertifyEdge
-        continue-on-error: true
 
       - uses: actions/checkout@v4
         with:
           repository: SentinelOps-CI/provability-fabric
           path: provability-fabric
-        continue-on-error: true
 
       - uses: actions/checkout@v4
         with:
           repository: fraware/scientific-memory
           path: scientific-memory
-        continue-on-error: true
 
       - uses: actions/setup-python@v5
         with:
@@ -83,30 +116,44 @@ jobs:
       - name: Sync schemas
         run: python scripts/sync_pcs_core_schema.py --pcs-core pcs-core
 
-      - name: Check producer ingests
+      - name: Producer doctor (diagnostic)
         run: |
-          python -m pcs_bench check-producer-ingests \
+          python -m pcs_bench producer-doctor \
+            --pcs-core pcs-core \
+            --labtrust LabTrust-Gym \
+            --certifyedge CertifyEdge \
+            --provability-fabric provability-fabric \
+            --scientific-memory scientific-memory \
+            --json-out reports/producer-doctor.json \
+            --release-grade || true
+
+      - name: Check producer ingests (release-grade)
+        run: |
+          python -m pcs_bench check-producer-ingests --release-grade \
             --pcs-core pcs-core \
             --labtrust LabTrust-Gym \
             --certifyedge CertifyEdge \
             --provability-fabric provability-fabric \
             --scientific-memory scientific-memory
-        continue-on-error: true
 
-      - name: Full producer gate
+      - name: Live producer gate (no fixture fallback)
         run: |
-          ARGS="--suite all --out reports/producer-gate.json --out-packet packets/producer-gate --pcs-core pcs-core --run-producer-benchmarks --reproduce-smoke --labtrust LabTrust-Gym --certifyedge CertifyEdge --provability-fabric provability-fabric --scientific-memory scientific-memory"
-          if [ "${{ inputs.run_live }}" = "true" ]; then
-            python -m pcs_bench gate $ARGS --live
-          else
-            python -m pcs_bench gate $ARGS --simulate
-          fi
-        continue-on-error: true
+          python -m pcs_bench gate --suite all --live \
+            --run-producer-benchmarks --reproduce-smoke \
+            --out reports/producer-gate.json \
+            --out-packet packets/producer-gate \
+            --pcs-core pcs-core \
+            --labtrust LabTrust-Gym \
+            --certifyedge CertifyEdge \
+            --provability-fabric provability-fabric \
+            --scientific-memory scientific-memory
 
-      - name: Upload producer gate artifacts
+      - name: Upload live gate artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: pcs-producer-gate
+          name: pcs-producer-gate-live
           path: |
             reports/producer-gate.json
+            reports/producer-doctor.json
+            reports/producer_merge_manifest.v0.json
             packets/producer-gate

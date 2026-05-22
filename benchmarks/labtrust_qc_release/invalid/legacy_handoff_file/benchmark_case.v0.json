@@ -13,6 +13,6 @@
   "expected_responsible_component": "handoff",
   "expected_repair_hint_kind": "align_handoff",
   "source_repo": "https://github.com/fraware/pcs-bench",
-  "source_commit": "2ee816754ef846df47a4eb1805d1cd0e3ae6eea8",
+  "source_commit": "89698646d51d78004774c5502864fc897a1a89d3",
   "signature_or_digest": "sha256:63bcb7a51d1e33cd2c4aaa1ebff8f61bcf3ae81664a89b4456a4def416fb4222"
 }

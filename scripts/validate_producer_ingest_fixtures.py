@@ -21,11 +21,18 @@ def main() -> int:
         default=ROOT.parent / "pcs-core",
         help="pcs-core checkout for schemas (falls back to embedded schemas)",
     )
+    parser.add_argument(
+        "--release-grade",
+        action="store_true",
+        help="Require release-grade semantic adequacy on golden fixtures.",
+    )
     args = parser.parse_args()
     pcs_core = args.pcs_core if args.pcs_core.is_dir() else None
 
     failed = False
-    for result in validate_all_producer_fixtures(pcs_core):
+    for result in validate_all_producer_fixtures(
+        pcs_core, release_grade=args.release_grade
+    ):
         if result.valid:
             print(f"OK {result.producer} {result.path}")
         else:

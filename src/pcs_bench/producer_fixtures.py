@@ -42,6 +42,7 @@ def validate_all_producer_fixtures(
     pcs_core: Path | None = None,
     *,
     use_pcs_validate: bool = False,
+    release_grade: bool = False,
 ) -> list[ProducerFixtureValidation]:
     from pcs_bench.ingest_validation import validate_ingest_json
 
@@ -55,7 +56,12 @@ def validate_all_producer_fixtures(
             entry.errors.append(f"Missing fixture: {path}")
         else:
             entry.errors.extend(
-                validate_ingest_json(path, schema_root, use_pcs_validate=use_pcs_validate)
+                validate_ingest_json(
+                    path,
+                    schema_root,
+                    use_pcs_validate=use_pcs_validate,
+                    release_grade=release_grade,
+                )
             )
         results.append(entry)
 

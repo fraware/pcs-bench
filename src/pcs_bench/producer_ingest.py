@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,7 @@ from pcs_bench.ingest_validation import (
     canonical_producer_id,
     load_ingest_document,
     validate_ingest_data_strict,
+    validate_ingest_developer_warnings,
 )
 from pcs_bench.report_export import enrich_report_for_export, pcs_bench_source_commit
 from pcs_bench.reports import report_digest
@@ -240,7 +242,23 @@ def ingest_from_pcs_bench_ingest(
     return report
 
 
-def merge_benchmark_reports(reports: list[BenchmarkReport], *, suite_id: str = "all") -> BenchmarkReport:
+@dataclass
+class ProducerMergeEntry:
+    producer_id: str
+    suite_id: str
+    source_repo: str
+    source_commit: str
+    ingest_digest: str
+    ingest_path: str = ""
+    normalized_path: str = ""
+
+
+def merge_benchmark_reports(
+    reports: list[BenchmarkReport],
+    *,
+    suite_id: str = "all",
+    producer_entries: list[ProducerMergeEntry] | None = None,
+) -> BenchmarkReport:
     """Merge multiple BenchmarkReport instances into one aggregate report."""
     if not reports:
         raise ValueError("No reports to merge")
@@ -278,9 +296,32 @@ def merge_benchmark_reports(reports: list[BenchmarkReport], *, suite_id: str = "
         "hybrid_fallback_cases": sum(
             1 for r in merged.runs if r.execution_kind not in ("live", "simulate")
         ),
-        "producer_reports_merged": len(reports),
+        "producer_reports_merged": len(producer_entries) if producer_entries else len(reports),
     }
     return merged
+
+
+def write_producer_merge_manifest(out_path: Path, entries: list[ProducerMergeEntry]) -> Path:
+    """Write auditable producer provenance sidecar next to aggregate report."""
+    manifest_path = out_path.parent / "producer_merge_manifest.v0.json"
+    payload = {
+        "schema_version": "v0",
+        "aggregate_report": out_path.name,
+        "producer_reports": [
+            {
+                "producer_id": e.producer_id,
+                "suite_id": e.suite_id,
+                "source_repo": e.source_repo,
+                "source_commit": e.source_commit,
+                "ingest_digest": e.ingest_digest,
+                "ingest_path": e.ingest_path,
+                "normalized_path": e.normalized_path,
+            }
+            for e in entries
+        ],
+    }
+    manifest_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    return manifest_path
 
 
 def ingest_producer_output(
@@ -291,6 +332,8 @@ def ingest_producer_output(
     pcs_core_path: Path | None = None,
     suite_id: str | None = None,
     validate: bool = True,
+    release_grade: bool = False,
+    producer_repo: Path | None = None,
 ) -> BenchmarkReport:
     """Load PcsBenchIngest.v0 and write a normalized BenchmarkReport.v0."""
     data, base_dir = load_ingest_document(input_path)
@@ -298,11 +341,27 @@ def ingest_producer_output(
     root = pcs_core_path if pcs_core_path and pcs_core_path.is_dir() else Path(__file__).resolve().parent
     if validate:
         ingest_file = input_path if input_path.is_file() else base_dir / "pcs_bench_ingest.v0.json"
+        search_roots: tuple[Path, ...] = ()
+        if producer_repo and producer_repo.is_dir():
+            search_roots = (producer_repo.resolve(), base_dir.resolve())
+        elif base_dir.is_dir():
+            search_roots = (base_dir.resolve(),)
         errors = validate_ingest_data_strict(
-            data, root, ingest_file=ingest_file if ingest_file.is_file() else None
+            data,
+            root,
+            ingest_file=ingest_file if ingest_file.is_file() else None,
+            release_grade=release_grade,
+            search_roots=search_roots,
         )
         if errors:
             raise ValueError("; ".join(errors))
+        if not release_grade:
+            warnings = validate_ingest_developer_warnings(data, search_roots=search_roots)
+            if warnings:
+                import sys
+
+                for warning in warnings:
+                    print(warning, file=sys.stderr)
 
     report = ingest_from_pcs_bench_ingest(
         data,

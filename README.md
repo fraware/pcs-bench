@@ -59,6 +59,11 @@ pcs-bench validate-ingest --input ../CertifyEdge/benchmark_runs/tool_use_safety/
 # Normalize producer-native benchmark output
 pcs-bench ingest-producer-output --producer certifyedge --input ../CertifyEdge/benchmark_runs/tool_use_safety/pcs_bench_ingest.v0.json --out reports/certifyedge.normalized.json
 
+# Producer diagnostics and contracts (see docs/producer-contracts.md)
+pcs-bench producer-doctor --pcs-core ../pcs-core --json-out reports/producer-doctor.json
+make producer-gate                    # offline: fixture ingest fallback
+make producer-gate-release            # live: release-grade, no fixture fallback
+
 # Gate with producer benchmarks (live)
 pcs-bench gate --suite all --live --run-producer-benchmarks --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory
 

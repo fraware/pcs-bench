@@ -9,6 +9,7 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from pcs_bench.config import BenchConfig
 from pcs_bench.report_export import to_benchmark_report_v0_dict
@@ -115,6 +116,7 @@ def export_benchmark_packet(
             json.dumps(explain, indent=2),
             encoding="utf-8",
         )
+    _export_producer_coverage_artifacts(report_path, out_dir)
     _write_reproduce_script(out_dir)
 
     meta = {
@@ -127,6 +129,12 @@ def export_benchmark_packet(
         "live_cases": report.summary.get("live_cases"),
     }
     (out_dir / "packet_meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
+
+    from pcs_bench.producer_artifacts import attach_producer_artifacts_for_packet
+
+    attach_producer_artifacts_for_packet(
+        report_path, out_dir, scratch_dir=report_path.parent / ".gate-producer-scratch"
+    )
     return out_dir
 
 
@@ -180,24 +188,32 @@ def verify_benchmark_packet(
                     result.errors.append(f"benchmark_case.v0.json missing under {rel}")
                     result.valid = False
 
-    if reproduce_smoke and result.valid:
-        _verify_reproduce_smoke(packet_dir, result)
+    if reproduce_smoke:
+        smoke_report = _verify_reproduce_smoke(packet_dir, result)
+        smoke_path = packet_dir / "packet_reproduction_report.v0.json"
+        smoke_path.write_text(json.dumps(smoke_report, indent=2), encoding="utf-8")
+        if not smoke_report.get("passed", False):
+            result.valid = False
 
     return result
 
 
-def _verify_reproduce_smoke(packet_dir: Path, result: PacketVerificationResult) -> None:
-    """Re-run lightweight reproduction checks bundled in the packet."""
+def _verify_reproduce_smoke(
+    packet_dir: Path,
+    result: PacketVerificationResult,
+) -> dict[str, Any]:
+    """Re-run lightweight reproduction checks; return packet_reproduction_report.v0 payload."""
     from pcs_bench.benchmark_vocabulary import BENCHMARK_FAILED, BENCHMARK_PASSED
     from pcs_bench.cases import load_case
     from pcs_bench.metrics_definitions import REQUIRED_MEMORY_SECTIONS
     from pcs_bench.simulation import load_expected_sidecar, simulate_outcome
 
+    checks: dict[str, Any] = {}
     manifest_path = packet_dir / "case_manifest.json"
     if not manifest_path.exists():
         result.errors.append("reproduce-smoke: case_manifest.json missing")
         result.valid = False
-        return
+        return _reproduction_report_payload(packet_dir, checks, passed=False)
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     valid_entry = next(
@@ -211,34 +227,198 @@ def _verify_reproduce_smoke(packet_dir: Path, result: PacketVerificationResult) 
     if not valid_entry or not invalid_entry:
         result.errors.append("reproduce-smoke: need one valid and one invalid case in manifest")
         result.valid = False
-        return
-
-    for label, entry in (("valid", valid_entry), ("invalid", invalid_entry)):
-        rel = entry.get("fixture_path")
-        if not rel:
-            result.errors.append(f"reproduce-smoke: {label} case missing fixture_path")
-            result.valid = False
-            continue
-        case_root = packet_dir / rel
-        case_json = case_root / "benchmark_case.v0.json"
-        if not case_json.exists():
-            result.errors.append(f"reproduce-smoke: {label} case missing benchmark_case.v0.json")
-            result.valid = False
-            continue
-        case = load_case(case_json)
-        outcome = simulate_outcome(case, case_root)
-        expected_pass = entry.get("expected_status") == BENCHMARK_PASSED
-        if expected_pass and outcome.system_outcome != (case.expected_system_outcome or "admitted"):
-            result.errors.append(
-                f"reproduce-smoke: valid case {case.case_id} did not reproduce admitted outcome"
-            )
-            result.valid = False
-        if not expected_pass and outcome.system_outcome not in ("rejected", "stale", "unknown"):
-            if outcome.system_outcome == "admitted":
+        checks["labtrust_valid_replay"] = {"ok": False, "detail": "missing valid case"}
+        checks["labtrust_invalid_rejection"] = {"ok": False, "detail": "missing invalid case"}
+    else:
+        for key, label, entry in (
+            ("labtrust_valid_replay", "valid", valid_entry),
+            ("labtrust_invalid_rejection", "invalid", invalid_entry),
+        ):
+            rel = entry.get("fixture_path")
+            if not rel:
+                result.errors.append(f"reproduce-smoke: {label} case missing fixture_path")
+                result.valid = False
+                checks[key] = {"ok": False, "detail": "missing fixture_path"}
+                continue
+            case_root = packet_dir / rel
+            case_json = case_root / "benchmark_case.v0.json"
+            if not case_json.exists():
+                result.errors.append(f"reproduce-smoke: {label} case missing benchmark_case.v0.json")
+                result.valid = False
+                checks[key] = {"ok": False, "detail": "missing benchmark_case.v0.json"}
+                continue
+            case = load_case(case_json)
+            outcome = simulate_outcome(case, case_root)
+            expected_pass = entry.get("expected_status") == BENCHMARK_PASSED
+            ok = True
+            if expected_pass and outcome.system_outcome != (case.expected_system_outcome or "admitted"):
+                result.errors.append(
+                    f"reproduce-smoke: valid case {case.case_id} did not reproduce admitted outcome"
+                )
+                result.valid = False
+                ok = False
+            if not expected_pass and outcome.system_outcome == "admitted":
                 result.errors.append(
                     f"reproduce-smoke: invalid case {case.case_id} unexpectedly admitted"
                 )
                 result.valid = False
+                ok = False
+            checks[key] = {
+                "ok": ok,
+                "case_id": case.case_id,
+                "observed_system_outcome": outcome.system_outcome,
+            }
+
+    producer_checks = _verify_producer_coverage_smoke(packet_dir, result)
+    checks.update(producer_checks)
+
+    render_case = next(
+        (
+            c
+            for c in manifest
+            if (packet_dir / str(c.get("fixture_path", "")) / "expected" / "rendered_sections.json").exists()
+        ),
+        None,
+    )
+    if not render_case:
+        result.errors.append("reproduce-smoke: no Scientific Memory rendering fixture in packet")
+        result.valid = False
+        checks["scientific_memory_rendering"] = {"ok": False, "detail": "no rendering fixture"}
+    else:
+        rel = render_case["fixture_path"]
+        rendered = load_expected_sidecar(packet_dir / rel, "rendered_sections.json")
+        sections = rendered.get("sections") or rendered.get("rendered_sections") or []
+        missing = [s for s in REQUIRED_MEMORY_SECTIONS if s not in sections]
+        render_ok = not missing
+        if missing:
+            result.errors.append(
+                f"reproduce-smoke: rendering case missing sections {missing}"
+            )
+            result.valid = False
+        checks["scientific_memory_rendering"] = {
+            "ok": render_ok,
+            "case_id": render_case.get("case_id"),
+            "sections_present": list(sections),
+            "missing_sections": missing,
+        }
+
+    check_values = [c.get("ok") for c in checks.values() if isinstance(c, dict)]
+    passed = bool(check_values) and all(check_values)
+    if not passed:
+        result.valid = False
+    return _reproduction_report_payload(packet_dir, checks, passed=passed)
+
+
+_COVERAGE_EXPORT_KEYS = (
+    "explain_quality",
+    "profile_coverage",
+    "certificate_completeness",
+    "registry",
+    "formal_checks",
+)
+
+
+def _write_coverage_block(dest: Path, filename: str, block: Any) -> None:
+    if isinstance(block, dict) and block:
+        (dest / filename).write_text(json.dumps(block, indent=2), encoding="utf-8")
+
+
+def _export_producer_coverage_from_ingest(dest: Path, ingest_data: dict[str, Any]) -> None:
+    """Export coverage artifacts from a PcsBenchIngest.v0 document."""
+    from pcs_bench.producer_ingest import _coverage_block_from_ingest
+
+    coverage = _coverage_block_from_ingest(ingest_data)
+    for key in _COVERAGE_EXPORT_KEYS:
+        _write_coverage_block(dest, f"{key}.json", coverage.get(key, {}))
+
+    explain_reports = ingest_data.get("explain_quality_reports") or []
+    if explain_reports and isinstance(explain_reports[0], dict):
+        _write_coverage_block(dest, "explain_quality.json", explain_reports[0])
+
+    profile_reports = ingest_data.get("profile_coverage_reports") or []
+    if profile_reports and isinstance(profile_reports[0], dict):
+        _write_coverage_block(dest, "profile_coverage.json", profile_reports[0])
+
+
+def _export_producer_coverage_artifacts(report_path: Path, out_dir: Path) -> None:
+    """Export per-producer coverage blocks from merge manifest normalized reports."""
+    manifest_path = out_dir / "producer_merge_manifest.v0.json"
+    if not manifest_path.is_file():
+        manifest_path = report_path.parent / "producer_merge_manifest.v0.json"
+    if not manifest_path.is_file():
+        return
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    producer_root = out_dir / "producer_coverage"
+    for entry in manifest.get("producer_reports") or []:
+        if not isinstance(entry, dict):
+            continue
+        producer_id = str(entry.get("producer_id", ""))
+        if not producer_id:
+            continue
+        dest = producer_root / producer_id
+        dest.mkdir(parents=True, exist_ok=True)
+
+        ingest_raw = entry.get("ingest_path")
+        if ingest_raw:
+            ingest_path = Path(ingest_raw)
+            if ingest_path.is_file():
+                ingest_data = json.loads(ingest_path.read_text(encoding="utf-8"))
+                _export_producer_coverage_from_ingest(dest, ingest_data)
+                continue
+
+        normalized = entry.get("normalized_path")
+        if not normalized:
+            continue
+        norm_path = Path(normalized)
+        if not norm_path.is_file():
+            continue
+        data = json.loads(norm_path.read_text(encoding="utf-8"))
+        coverage = data.get("coverage") or {}
+        for key in _COVERAGE_EXPORT_KEYS:
+            _write_coverage_block(dest, f"{key}.json", coverage.get(key, {}))
+
+
+def _verify_producer_coverage_smoke(
+    packet_dir: Path,
+    result: PacketVerificationResult,
+) -> dict[str, Any]:
+    """Validate PF/SM explain-quality and CertifyEdge profile coverage when exported."""
+    from pcs_bench.validation.schema_loader import validate_instance
+
+    pcs_root = Path(__file__).resolve().parent
+    checks: dict[str, Any] = {}
+    expectations: tuple[tuple[str, str, str], ...] = (
+        ("provability-fabric", "explain_quality", "ExplainQualityReport.v0"),
+        ("scientific-memory", "explain_quality", "ExplainQualityReport.v0"),
+        ("certifyedge", "profile_coverage", "ProfileCoverageReport.v0"),
+    )
+    producer_root = packet_dir / "producer_coverage"
+
+    if producer_root.is_dir():
+        for producer_id, filename, schema_name in expectations:
+            doc_path = producer_root / producer_id / f"{filename}.json"
+            key = f"{producer_id}_{filename}"
+            if not doc_path.is_file():
+                result.errors.append(
+                    f"reproduce-smoke: missing {producer_id} {filename} under producer_coverage/"
+                )
+                result.valid = False
+                checks[key] = {"ok": False, "detail": "missing"}
+                continue
+            doc = json.loads(doc_path.read_text(encoding="utf-8"))
+            schema_errors = validate_instance(doc, schema_name, pcs_root)
+            if schema_errors:
+                for err in schema_errors:
+                    result.errors.append(f"reproduce-smoke {producer_id}: {err}")
+                result.valid = False
+                checks[key] = {"ok": False, "errors": schema_errors}
+            else:
+                checks[key] = {
+                    "ok": True,
+                    "producer_id": doc.get("producer_id", producer_id),
+                    "case_id": doc.get("case_id") or doc.get("coverage_id"),
+                }
+        return checks
 
     explain_path = packet_dir / "explain_quality.json"
     report_path = packet_dir / "BenchmarkReport.v0.json"
@@ -252,36 +432,42 @@ def _verify_reproduce_smoke(packet_dir: Path, result: PacketVerificationResult) 
     if not explain_doc:
         result.errors.append("reproduce-smoke: explain_quality report missing")
         result.valid = False
-    else:
-        from pcs_bench.validation.schema_loader import validate_instance
+        checks["explain_quality_schema"] = {"ok": False, "detail": "missing explain_quality"}
+        return checks
 
-        pcs_root = Path(__file__).resolve().parent
-        explain_errors = validate_instance(explain_doc, "ExplainQualityReport.v0", pcs_root)
+    explain_errors = validate_instance(explain_doc, "ExplainQualityReport.v0", pcs_root)
+    producer_id = explain_doc.get("producer_id", "unknown")
+    if explain_errors:
         for err in explain_errors:
             result.errors.append(f"reproduce-smoke explain_quality: {err}")
-            result.valid = False
-
-    render_case = next(
-        (
-            c
-            for c in manifest
-            if (packet_dir / str(c.get("fixture_path", "")) / "expected" / "rendered_sections.json").exists()
-        ),
-        None,
-    )
-    if not render_case:
-        result.errors.append("reproduce-smoke: no Scientific Memory rendering fixture in packet")
         result.valid = False
+        checks["explain_quality_schema"] = {
+            "ok": False,
+            "producer_id": producer_id,
+            "errors": explain_errors,
+        }
     else:
-        rel = render_case["fixture_path"]
-        rendered = load_expected_sidecar(packet_dir / rel, "rendered_sections.json")
-        sections = rendered.get("sections") or rendered.get("rendered_sections") or []
-        missing = [s for s in REQUIRED_MEMORY_SECTIONS if s not in sections]
-        if missing:
-            result.errors.append(
-                f"reproduce-smoke: rendering case missing sections {missing}"
-            )
-            result.valid = False
+        checks["explain_quality_schema"] = {
+            "ok": True,
+            "producer_id": producer_id,
+            "case_id": explain_doc.get("case_id"),
+        }
+    return checks
+
+
+def _reproduction_report_payload(
+    packet_dir: Path,
+    checks: dict[str, Any],
+    *,
+    passed: bool,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "v0",
+        "packet_dir": str(packet_dir.resolve()),
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "passed": passed,
+        "checks": checks,
+    }
 
 
 def _export_command_history(report: BenchmarkReport, dest: Path) -> None:

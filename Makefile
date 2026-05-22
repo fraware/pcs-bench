@@ -2,7 +2,7 @@
 PYTHON ?= python
 PCS_BENCH = $(PYTHON) -m pcs_bench
 
-.PHONY: install test bench ci gate producer-gate producer-gate-live fixtures manifest packet schemas lint clean validate-producer-ingest sync-ingest-fixtures check-producer-ingests check-producer-ingest-fixtures
+.PHONY: install test bench ci gate producer-gate producer-gate-live producer-gate-release producer-doctor fixtures manifest packet schemas lint clean validate-producer-ingest sync-ingest-fixtures check-producer-ingests check-producer-ingest-fixtures
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -33,6 +33,9 @@ sync-ingest-fixtures:
 validate-producer-ingest:
 	$(PYTHON) scripts/validate_producer_ingest_fixtures.py --pcs-core ../pcs-core
 
+validate-producer-ingest-release:
+	$(PYTHON) scripts/validate_producer_ingest_fixtures.py --pcs-core ../pcs-core --release-grade
+
 check-producer-ingests:
 	$(PCS_BENCH) check-producer-ingests \
 		--pcs-core ../pcs-core \
@@ -46,12 +49,7 @@ check-producer-ingest-fixtures:
 
 producer-gate: install
 	$(PCS_BENCH) gate --suite all --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke \
-		--out reports/producer-gate.json --out-packet packets/producer-gate \
-		--pcs-core ../pcs-core \
-		--labtrust ../LabTrust-Gym \
-		--certifyedge ../CertifyEdge \
-		--provability-fabric ../provability-fabric \
-		--scientific-memory ../scientific-memory
+		--out reports/producer-gate.json --out-packet packets/producer-gate
 
 producer-gate-hybrid: install
 	$(PCS_BENCH) gate --suite all --hybrid --run-producer-benchmarks --reproduce-smoke \
@@ -65,6 +63,29 @@ producer-gate-hybrid: install
 producer-gate-live: install
 	$(PCS_BENCH) gate --suite all --live --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke \
 		--out reports/producer-gate.json --out-packet packets/producer-gate \
+		--pcs-core ../pcs-core \
+		--labtrust ../LabTrust-Gym \
+		--certifyedge ../CertifyEdge \
+		--provability-fabric ../provability-fabric \
+		--scientific-memory ../scientific-memory
+
+producer-gate-release: install
+	-$(PCS_BENCH) producer-doctor --json-out reports/producer-doctor.json \
+		--pcs-core ../pcs-core \
+		--labtrust ../LabTrust-Gym \
+		--certifyedge ../CertifyEdge \
+		--provability-fabric ../provability-fabric \
+		--scientific-memory ../scientific-memory
+	$(PCS_BENCH) gate --suite all --live --run-producer-benchmarks --reproduce-smoke \
+		--out reports/producer-gate.json --out-packet packets/producer-gate \
+		--pcs-core ../pcs-core \
+		--labtrust ../LabTrust-Gym \
+		--certifyedge ../CertifyEdge \
+		--provability-fabric ../provability-fabric \
+		--scientific-memory ../scientific-memory
+
+producer-doctor:
+	-$(PCS_BENCH) producer-doctor --json-out reports/producer-doctor.json \
 		--pcs-core ../pcs-core \
 		--labtrust ../LabTrust-Gym \
 		--certifyedge ../CertifyEdge \

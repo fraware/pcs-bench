@@ -25,7 +25,7 @@
       "observed_failure_code": null,
       "observed_responsible_component": null,
       "observed_repair_hint": null,
-      "system_admission_outcome": "not_evaluated",
+      "system_admission_outcome": "admitted",
       "release_chain_status": "valid",
       "certificate_status": "CertificateChecked",
       "scientific_memory_import_status": "not_applicable",

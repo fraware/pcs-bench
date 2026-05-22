@@ -140,7 +140,7 @@ def run_cmd(
     live: bool = typer.Option(False, "--live", help="Invoke live ecosystem CLIs."),
     simulate: bool = typer.Option(
         True,
-        "--simulate",
+        "--simulate/--no-simulate",
         help="Use fixture sidecars (default). Ignored when --live is set.",
     ),
     hybrid: bool = typer.Option(
@@ -203,7 +203,7 @@ def run_cmd(
         cfg.benchmarks_root, suite_names
     )
 
-    use_simulate = simulate and not live
+    use_simulate = (simulate or not live) and not live and not hybrid
     if ci and live_required_suites and use_simulate and not dry_run:
         console.print(
             "[red]CI with live_required suites requires --live (not --simulate)[/red]"
@@ -556,6 +556,7 @@ def gate_cmd(
 
         console.print("[bold]gate[/bold] aggregate producer ingests")
         scratch = out.parent / ".gate-producer-scratch"
+        producer_release_grade = (live or hybrid) and not use_producer_fixtures
         agg_errors = aggregate_gate_report(
             cfg,
             bench_out,
@@ -564,6 +565,7 @@ def gate_cmd(
             out_path=out,
             require_all_producers=True,
             use_fixture_fallback=use_producer_fixtures,
+            release_grade=producer_release_grade,
         )
         if agg_errors:
             console.print("[red]Producer ingest aggregation failed:[/red]")
@@ -611,6 +613,11 @@ def gate_cmd(
 @app.command("validate-producer-fixtures")
 def validate_producer_fixtures_cmd(
     pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    release_grade: bool = typer.Option(
+        False,
+        "--release-grade",
+        help="Also require release-grade semantic adequacy on golden fixtures.",
+    ),
     config: Optional[Path] = typer.Option(None, "--config"),
 ) -> None:
     """Validate all embedded producer PcsBenchIngest.v0 fixtures."""
@@ -618,7 +625,7 @@ def validate_producer_fixtures_cmd(
 
     cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
     schema_root = resolve_schema_root(cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None)
-    results = validate_all_producer_fixtures(schema_root)
+    results = validate_all_producer_fixtures(schema_root, release_grade=release_grade)
     failed = False
     for result in results:
         if result.valid:
@@ -630,6 +637,8 @@ def validate_producer_fixtures_cmd(
                 console.print(f"  - {err}")
     if failed:
         raise typer.Exit(1)
+    grade = "release-grade" if release_grade else "schema"
+    console.print(f"[green]All producer fixtures passed ({grade})[/green]")
 
 
 @app.command("check-producer-ingests")
@@ -639,6 +648,11 @@ def check_producer_ingests_cmd(
         False,
         "--fixtures-only",
         help="Validate embedded golden fixtures (offline; no sibling repos required).",
+    ),
+    release_grade: bool = typer.Option(
+        False,
+        "--release-grade",
+        help="Apply release-grade ingest adequacy checks.",
     ),
     pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
     labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
@@ -673,12 +687,17 @@ def check_producer_ingests_cmd(
                 table.add_row(producer_id, str(path), "[red]missing[/red]")
                 failed = True
                 continue
-            errors = validate_ingest_json(path, schema_root)
+            errors = validate_ingest_json(
+                path, schema_root, release_grade=release_grade
+            )
             if errors:
                 table.add_row(producer_id, str(path), f"[red]{len(errors)} errors[/red]")
                 failed = True
             else:
-                table.add_row(producer_id, str(path), "[green]valid[/green]")
+                status = "[green]valid[/green]"
+                if release_grade:
+                    status += " (release)"
+                table.add_row(producer_id, str(path), status)
         console.print(table)
         if failed:
             raise typer.Exit(1)
@@ -699,12 +718,20 @@ def check_producer_ingests_cmd(
             table.add_row(spec.producer, str(path), f"[red]missing[/red]{hint}")
             failed = True
             continue
-        errors = validate_ingest_json(path, schema_root)
+        errors = validate_ingest_json(
+            path,
+            schema_root,
+            release_grade=release_grade,
+            producer_repo=repo if repo.is_dir() else None,
+        )
         if errors:
             table.add_row(spec.producer, str(path), f"[red]{len(errors)} errors[/red]")
             failed = True
         else:
-            table.add_row(spec.producer, str(path), "[green]valid[/green]")
+            status = "[green]valid[/green]"
+            if release_grade:
+                status += " (release)"
+            table.add_row(spec.producer, str(path), status)
     console.print(table)
     if failed:
         console.print(
@@ -753,23 +780,109 @@ def validate_ingest_cmd(
         "--use-pcs-validate",
         help="Also run pcs-core CLI validate when pcs is on PATH.",
     ),
+    release_grade: bool = typer.Option(
+        False,
+        "--release-grade",
+        help="Fail on semantic inadequacy (empty runs, missing producer artifacts, placeholder commits).",
+    ),
     config: Optional[Path] = typer.Option(None, "--config"),
 ) -> None:
     """Validate a producer PcsBenchIngest.v0 payload against pcs-core schemas."""
-    from pcs_bench.ingest_validation import validate_ingest_json
+    from pcs_bench.ingest_validation import validate_ingest_developer_warnings, validate_ingest_json
 
     from pcs_bench.producer_fixtures import resolve_schema_root
 
     cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
     schema_root = resolve_schema_root(cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None)
 
-    errors = validate_ingest_json(input, schema_root, use_pcs_validate=use_pcs_validate)
+    errors = validate_ingest_json(
+        input,
+        schema_root,
+        use_pcs_validate=use_pcs_validate,
+        release_grade=release_grade,
+    )
+    if not release_grade:
+        from pcs_bench.ingest_validation import load_ingest_document
+
+        data, base = load_ingest_document(input)
+        roots = (base.resolve(),)
+        for warning in validate_ingest_developer_warnings(data, search_roots=roots):
+            console.print(f"[yellow]{warning}[/yellow]")
     if errors:
         console.print("[red]Ingest validation failed:[/red]")
         for err in errors:
             console.print(f"  - {err}")
         raise typer.Exit(1)
-    console.print(f"[green]Ingest validation passed[/green] {input}")
+    grade = "release-grade" if release_grade else "schema"
+    console.print(f"[green]Ingest validation passed ({grade})[/green] {input}")
+
+
+@app.command("producer-doctor")
+def producer_doctor_cmd(
+    config: Optional[Path] = typer.Option(None, "--config"),
+    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
+    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
+    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+    release_grade: bool = typer.Option(
+        False,
+        "--release-grade",
+        help="Also evaluate release-grade ingest adequacy (diagnostic only).",
+    ),
+    json_out: Optional[Path] = typer.Option(
+        None,
+        "--json-out",
+        help="Write structured JSON report to this path.",
+    ),
+) -> None:
+    """Diagnose producer repo readiness (non-gating)."""
+    import json as json_mod
+
+    from pcs_bench.producer_doctor import DoctorCheck, run_producer_doctor
+    from pcs_bench.producer_fixtures import resolve_schema_root
+
+    cfg = _load_config(config).apply_cli_overrides(
+        pcs_core=pcs_core,
+        labtrust=labtrust,
+        certifyedge=certifyedge,
+        provability_fabric=provability_fabric,
+        scientific_memory=scientific_memory,
+    )
+    schema_root = resolve_schema_root(cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None)
+    doctor_result = run_producer_doctor(cfg, schema_root=schema_root, release_grade=release_grade)
+
+    table = Table("Producer", "Ready", "Repo", "Cases", "Ingest", "CLI")
+    for producer in doctor_result.producers:
+        by_name = {c.name: c for c in producer.checks}
+        table.add_row(
+            producer.producer_id,
+            "[green]yes[/green]" if producer.ready else "[red]no[/red]",
+            "ok" if by_name.get("repo_exists", DoctorCheck("", False, "")).ok else "missing",
+            by_name.get("benchmark_cases_dir", DoctorCheck("", False, "")).detail[:40],
+            "ok" if by_name.get("ingest_present", DoctorCheck("", False, "")).ok else "missing",
+            "ok" if by_name.get("cli_smoke", DoctorCheck("", False, "")).ok else "fail",
+        )
+    console.print(table)
+
+    for producer in doctor_result.producers:
+        if producer.ready:
+            continue
+        console.print(f"[yellow]{producer.producer_id}[/yellow]")
+        for check in producer.checks:
+            if not check.ok:
+                console.print(f"  [red]{check.name}[/red]: {check.detail}")
+
+    payload = doctor_result.to_dict()
+    if json_out:
+        json_out.parent.mkdir(parents=True, exist_ok=True)
+        json_out.write_text(json_mod.dumps(payload, indent=2), encoding="utf-8")
+        console.print(f"[dim]Wrote JSON report to[/dim] {json_out}")
+    else:
+        console.print(json_mod.dumps(payload, indent=2))
+
+    if not payload.get("all_ready"):
+        raise typer.Exit(2)
 
 
 @app.command("verify-packet")

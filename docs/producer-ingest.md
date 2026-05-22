@@ -25,6 +25,8 @@ Schema source of truth: **pcs-core** (`schemas/PcsBenchIngest.v0.schema.json`). 
 pcs-bench sync-schemas --pcs-core ../pcs-core
 ```
 
+See **[producer-contracts.md](producer-contracts.md)** for the full contract matrix (repo URLs, case search paths, adapter methods, release-grade rules).
+
 ## Producer output locations
 
 | Producer | Ingest path |
@@ -37,8 +39,20 @@ pcs-bench sync-schemas --pcs-core ../pcs-core
 ## CLI
 
 ```bash
+# Diagnose sibling repos (non-gating; table + JSON)
+pcs-bench producer-doctor \
+  --pcs-core ../pcs-core \
+  --labtrust ../LabTrust-Gym \
+  --certifyedge ../CertifyEdge \
+  --provability-fabric ../provability-fabric \
+  --scientific-memory ../scientific-memory \
+  --json-out reports/producer-doctor.json
+
 # Structural + semantic validation (schema + pcs-core artifact_ref rules)
 pcs-bench validate-ingest --input path/to/pcs_bench_ingest.v0.json --pcs-core ../pcs-core
+
+# Release-grade adequacy (empty runs, missing producer artifacts, placeholder commits)
+pcs-bench validate-ingest --input path/to/pcs_bench_ingest.v0.json --release-grade
 
 # Optional second opinion via pcs-core CLI
 pcs-bench validate-ingest --input path/to/pcs_bench_ingest.v0.json --use-pcs-validate
@@ -94,8 +108,13 @@ With `--run-producer-benchmarks`:
 3. Validates each ingest, normalizes to internal `BenchmarkReport`, merges with the pcs-bench suite run.
 4. Recomputes harness metrics on the combined run set while preserving producer `coverage` blocks.
 5. Fails the gate if any of the four ingests are missing or invalid (strict mode).
+6. Writes `producer_merge_manifest.v0.json` beside the aggregate report (producer provenance and ingest digests).
+
+`gate --live --run-producer-benchmarks` (without `--use-producer-fixtures`) applies **release-grade** ingest adequacy checks. Developer/offline gates use schema validation only unless you pass `--release-grade` explicitly.
 
 With `--use-producer-fixtures`, missing repo ingests fall back to `tests/fixtures/producer_ingest/` (synced from pcs-core golden examples). Use this for local `make producer-gate` when sibling repos have not emitted `pcs_bench_ingest.v0.json` yet.
+
+Producer benchmark case directories are resolved from ordered search lists in `producer_contracts.py`; the gate logs the selected path to stderr.
 
 Every gate run also validates embedded fixtures under `tests/fixtures/producer_ingest/`.
 
@@ -107,7 +126,23 @@ Every gate run also validates embedded fixtures under `tests/fixtures/producer_i
 - An `ExplainQualityReport.v0` is present and schema-valid.
 - A Scientific Memory rendering fixture includes all required sections.
 
+It writes `packet_reproduction_report.v0.json` into the packet directory with per-check results.
+
+When `producer_merge_manifest.v0.json` is present beside the aggregate report, packets also include `producer_coverage/<producer_id>/` JSON blocks and reproduce-smoke validates:
+
+- `provability-fabric` / `scientific-memory` `ExplainQualityReport.v0`
+- `certifyedge` `ProfileCoverageReport.v0`
+- LabTrust valid/invalid case replay and Scientific Memory rendering sections
+
 Use `--reproduce-smoke` on `gate` to run the same checks on the exported packet.
+
+## Release integration (no fixture fallback)
+
+```bash
+make producer-gate-release
+```
+
+Runs `producer-doctor` (diagnostic), then `gate --live --run-producer-benchmarks` with release-grade ingest adequacy. Producer benchmarks write to canonical `benchmark_runs/<suite>/` paths and promote scratch ingests when needed.
 
 ## Offline fixtures
 

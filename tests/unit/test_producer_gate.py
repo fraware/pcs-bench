@@ -94,6 +94,12 @@ def test_aggregate_gate_report_from_fixtures(tmp_path: Path) -> None:
     assert "metrics" in payload
     assert payload["benchmark_suite_id"] == "all"
 
+    manifest_path = tmp_path / "producer_merge_manifest.v0.json"
+    assert manifest_path.is_file()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert len(manifest["producer_reports"]) == len(PRODUCER_BENCHMARKS)
+    assert manifest["producer_reports"][0]["ingest_digest"].startswith("sha256:")
+
 
 def test_collect_producer_ingests_fixture_fallback(tmp_path: Path) -> None:
     cfg = BenchConfig(

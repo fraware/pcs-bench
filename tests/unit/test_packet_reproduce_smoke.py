@@ -100,6 +100,14 @@ def test_verify_packet_reproduce_smoke(tmp_path: Path) -> None:
     result = verify_benchmark_packet(packet_dir, cfg, reproduce_smoke=True)
     assert result.valid, result.errors
     assert (packet_dir / "explain_quality.json").exists()
+    report_path = packet_dir / "packet_reproduction_report.v0.json"
+    assert report_path.is_file()
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    assert report["passed"] is True
+    assert report["checks"]["labtrust_valid_replay"]["ok"] is True
+    assert report["checks"]["labtrust_invalid_rejection"]["ok"] is True
+    assert report["checks"]["explain_quality_schema"]["ok"] is True
+    assert report["checks"]["scientific_memory_rendering"]["ok"] is True
 
 
 def test_verify_packet_cli_reproduce_smoke(tmp_path: Path) -> None:

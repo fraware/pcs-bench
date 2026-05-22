@@ -43,11 +43,19 @@ switch ($Target) {
     }
     "producer-gate" {
         & $PSScriptRoot/make.ps1 install
-        Run "$PcsBench gate --suite all --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke --out reports/producer-gate.json --out-packet packets/producer-gate --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory"
+        Run "$PcsBench gate --suite all --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke --out reports/producer-gate.json --out-packet packets/producer-gate"
     }
     "producer-gate-live" {
         & $PSScriptRoot/make.ps1 install
         Run "$PcsBench gate --suite all --live --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke --out reports/producer-gate.json --out-packet packets/producer-gate --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory"
+    }
+    "producer-gate-release" {
+        & $PSScriptRoot/make.ps1 install
+        Run "$PcsBench producer-doctor --json-out reports/producer-doctor.json --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory; if ($LASTEXITCODE -ne 0) { Write-Host 'producer-doctor: not all producers ready (continuing)' }"
+        Run "$PcsBench gate --suite all --live --run-producer-benchmarks --reproduce-smoke --out reports/producer-gate.json --out-packet packets/producer-gate --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory"
+    }
+    "producer-doctor" {
+        Run "$PcsBench producer-doctor --json-out reports/producer-doctor.json --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
     }
     "gate" {
         & $PSScriptRoot/make.ps1 install
@@ -61,7 +69,7 @@ switch ($Target) {
     }
     default {
         Write-Host @"
-Targets: install, fixtures, manifest, schemas, test, bench, ci, gate, producer-gate, check-producer-ingests, sync-ingest-fixtures, packet, html
+Targets: install, fixtures, manifest, schemas, test, bench, ci, gate, producer-gate, producer-gate-release, producer-doctor, check-producer-ingests, sync-ingest-fixtures, packet, html
 Example: .\make.ps1 gate
 "@
     }

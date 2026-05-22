@@ -22,6 +22,7 @@ def ingest_all_producers(
     *,
     validate: bool = True,
     require_all: bool = True,
+    release_grade: bool = False,
 ) -> IngestAllResult:
     """Ingest PcsBenchIngest.v0 from each producer repo into normalized BenchmarkReport files."""
     result = IngestAllResult()
@@ -41,6 +42,8 @@ def ingest_all_producers(
                 dest,
                 pcs_core_path=cfg.repos.pcs_core,
                 validate=validate,
+                release_grade=release_grade,
+                producer_repo=repo if repo.is_dir() else None,
             )
         except (ValueError, OSError) as exc:
             result.errors.append(f"{spec.producer}: {exc}")

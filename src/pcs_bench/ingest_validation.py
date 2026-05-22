@@ -59,6 +59,38 @@ _REQUIRED_LIST_FIELDS = (
 
 _GIT_COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 _DIGEST_RE = re.compile(r"^sha256:[a-f0-9]{64}$")
+_ALL_ZERO_COMMIT_RE = re.compile(r"^0{40}$")
+
+_RELEASE_PRODUCER_REQUIREMENTS: dict[str, dict[str, bool]] = {
+    "labtrust-gym": {
+        "benchmark_runs": True,
+        "coverage_reports": False,
+        "failure_localization_reports": False,
+        "explain_quality_reports": False,
+        "profile_coverage_reports": False,
+    },
+    "certifyedge": {
+        "benchmark_runs": True,
+        "coverage_reports": True,
+        "failure_localization_reports": False,
+        "explain_quality_reports": False,
+        "profile_coverage_reports": True,
+    },
+    "provability-fabric": {
+        "benchmark_runs": True,
+        "coverage_reports": False,
+        "failure_localization_reports": True,
+        "explain_quality_reports": True,
+        "profile_coverage_reports": False,
+    },
+    "scientific-memory": {
+        "benchmark_runs": True,
+        "coverage_reports": False,
+        "failure_localization_reports": False,
+        "explain_quality_reports": True,
+        "profile_coverage_reports": False,
+    },
+}
 
 
 def canonical_producer_id(producer: str) -> str:
@@ -213,6 +245,117 @@ def validate_ingest_semantics(data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def _should_check_artifact_sidecars(search_roots: tuple[Path, ...]) -> bool:
+    """Sidecars are enforced for producer repos, not embedded golden fixtures."""
+    from pcs_bench.producer_fixtures import FIXTURE_ROOT
+
+    fixture_root = FIXTURE_ROOT.resolve()
+    for root in search_roots:
+        if not root.is_dir():
+            continue
+        resolved = root.resolve()
+        try:
+            resolved.relative_to(fixture_root)
+        except ValueError:
+            return True
+    return False
+
+
+def _artifact_ref_sidecar_missing(
+    ref: dict[str, Any],
+    index: int,
+    search_roots: tuple[Path, ...],
+) -> str | None:
+    path = ref.get("path")
+    if not isinstance(path, str) or not path.strip():
+        return None
+    for root in search_roots:
+        if not root.is_dir():
+            continue
+        if (root / path).is_file():
+            return None
+    return (
+        f"artifact_refs[{index}]: sidecar file missing for path {path!r} "
+        f"(searched under {', '.join(str(r) for r in search_roots)})"
+    )
+
+
+def validate_ingest_release_adequacy(
+    data: dict[str, Any],
+    *,
+    search_roots: tuple[Path, ...] = (),
+) -> list[str]:
+    """Release-grade semantic adequacy beyond schema validity."""
+    errors: list[str] = []
+    producer_id = canonical_producer_id(str(data.get("producer_id", "")))
+    requirements = _RELEASE_PRODUCER_REQUIREMENTS.get(producer_id, {})
+
+    runs = data.get("benchmark_runs") or []
+    coverage_rows = data.get("coverage_reports") or []
+    profile_rows = data.get("profile_coverage_reports") or []
+    coverage_only_ok = (
+        producer_id == "certifyedge"
+        and isinstance(coverage_rows, list)
+        and len(coverage_rows) > 0
+        and isinstance(profile_rows, list)
+        and len(profile_rows) > 0
+    )
+    if requirements.get("benchmark_runs") and not runs and not coverage_only_ok:
+        errors.append(f"release-grade: {producer_id} requires non-empty benchmark_runs")
+
+    for field, required in requirements.items():
+        if field == "benchmark_runs" or not required:
+            continue
+        rows = data.get(field)
+        if not isinstance(rows, list) or len(rows) == 0:
+            errors.append(f"release-grade: {producer_id} requires non-empty {field}")
+
+    commit = str(data.get("source_commit", ""))
+    if _ALL_ZERO_COMMIT_RE.match(commit):
+        errors.append("release-grade: source_commit must not be all zeros")
+
+    if isinstance(runs, list) and runs:
+        all_weak = True
+        for idx, run in enumerate(runs):
+            if not isinstance(run, dict):
+                continue
+            kind = str(run.get("execution_kind", "live"))
+            outcome = str(run.get("system_admission_outcome", ""))
+            if kind == "simulate":
+                errors.append(
+                    f"benchmark_runs[{idx}]: execution_kind=simulate not allowed for release-grade"
+                )
+            if outcome not in ("", "not_evaluated"):
+                all_weak = False
+            elif outcome == "not_evaluated":
+                pass
+            else:
+                all_weak = False
+        if all_weak:
+            errors.append(
+                "release-grade: all benchmark_runs have system_admission_outcome=not_evaluated"
+            )
+
+    refs = data.get("artifact_refs")
+    if isinstance(refs, list) and search_roots and _should_check_artifact_sidecars(search_roots):
+        for index, ref in enumerate(refs):
+            if isinstance(ref, dict):
+                missing = _artifact_ref_sidecar_missing(ref, index, search_roots)
+                if missing:
+                    errors.append(f"release-grade: {missing}")
+
+    return errors
+
+
+def validate_ingest_developer_warnings(
+    data: dict[str, Any],
+    *,
+    search_roots: tuple[Path, ...] = (),
+) -> list[str]:
+    """Same adequacy checks as release-grade, surfaced as warnings in developer mode."""
+    return [f"warning: {msg}" for msg in validate_ingest_release_adequacy(data, search_roots=search_roots)]
+
+
 def validate_ingest_via_pcs_cli(data_path: Path, pcs_core_repo: Path) -> list[str]:
     """Optional second opinion using pcs-core `pcs validate` when installed."""
     from pcs_bench.adapters.pcs_core import PcsCoreAdapter
@@ -238,12 +381,16 @@ def validate_ingest_data_strict(
     *,
     ingest_file: Path | None = None,
     use_pcs_validate: bool = False,
+    release_grade: bool = False,
+    search_roots: tuple[Path, ...] = (),
 ) -> list[str]:
     """Validate ingest JSON against PcsBenchIngest.v0 and nested artifact schemas."""
     from pcs_bench.validation.schema_loader import validate_instance
 
     errors = validate_instance(data, "PcsBenchIngest.v0", pcs_core_path)
     errors.extend(validate_ingest_semantics(data))
+    if release_grade:
+        errors.extend(validate_ingest_release_adequacy(data, search_roots=search_roots))
 
     for idx, run in enumerate(data.get("benchmark_runs") or []):
         if isinstance(run, dict):
@@ -320,14 +467,22 @@ def validate_ingest_json(
     pcs_core_path: Path,
     *,
     use_pcs_validate: bool = False,
+    release_grade: bool = False,
+    producer_repo: Path | None = None,
 ) -> list[str]:
-    data, _base = load_ingest_document(input_path)
-    ingest_file = input_path if input_path.is_file() else _base / "pcs_bench_ingest.v0.json"
+    data, base = load_ingest_document(input_path)
+    ingest_file = input_path if input_path.is_file() else base / "pcs_bench_ingest.v0.json"
+    roots: list[Path] = []
+    if producer_repo and producer_repo.is_dir():
+        roots.append(producer_repo.resolve())
+    roots.append(base.resolve())
     return validate_ingest_data_strict(
         data,
         pcs_core_path,
         ingest_file=ingest_file,
         use_pcs_validate=use_pcs_validate,
+        release_grade=release_grade,
+        search_roots=tuple(roots),
     )
 
 

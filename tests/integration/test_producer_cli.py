@@ -35,6 +35,31 @@ def test_validate_ingest_cli() -> None:
     assert result.exit_code == 0, result.output
 
 
+def test_producer_doctor_cli_json(tmp_path: Path) -> None:
+    runner = CliRunner()
+    json_out = tmp_path / "doctor.json"
+    result = runner.invoke(
+        app,
+        ["producer-doctor", "--json-out", str(json_out)],
+        catch_exceptions=False,
+    )
+    assert result.exit_code in (0, 2), result.output
+    if json_out.is_file():
+        payload = json.loads(json_out.read_text(encoding="utf-8"))
+        assert payload.get("schema_version") == "v0"
+        assert "producers" in payload
+
+
+def test_validate_ingest_release_grade_cli_fails_on_fixture() -> None:
+    runner = CliRunner()
+    result = runner.invoke(
+        app,
+        ["validate-ingest", "--input", str(FIXTURE), "--release-grade"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 1, result.output
+
+
 def test_ingest_producer_output_cli(tmp_path: Path) -> None:
     runner = CliRunner()
     out = tmp_path / "normalized.json"
