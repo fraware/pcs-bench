@@ -49,10 +49,17 @@ switch ($Target) {
         & $PSScriptRoot/make.ps1 install
         Run "$PcsBench gate --suite all --live --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke --out reports/producer-gate.json --out-packet packets/producer-gate --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory"
     }
-    "producer-gate-release" {
+    "producer-gate-release" { & $PSScriptRoot/make.ps1 live-ci }
+    "live-ci" {
         & $PSScriptRoot/make.ps1 install
-        Run "$PcsBench producer-doctor --json-out reports/producer-doctor.json --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory; if ($LASTEXITCODE -ne 0) { Write-Host 'producer-doctor: not all producers ready (continuing)' }"
-        Run "$PcsBench gate --suite all --live --run-producer-benchmarks --reproduce-smoke --out reports/producer-gate.json --out-packet packets/producer-gate --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory"
+        Run "$Python scripts/sync_pcs_core_schema.py --pcs-core ../pcs-core"
+        Run "$PcsBench producer-doctor --json-out reports/producer-doctor.json --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory --release-grade; if ($LASTEXITCODE -ne 0) { Write-Host 'producer-doctor: not all producers ready (continuing)' }"
+        Run "$PcsBench check-producer-ingests --release-grade --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory"
+        Run "$PcsBench gate --suite all --live --run-producer-benchmarks --reproduce-smoke --out reports/live-ci.json --out-packet packets/live-ci --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory"
+    }
+    "release-check" {
+        & $PSScriptRoot/make.ps1 install
+        Run "$PcsBench release-readiness --strict --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory --live-ci-report reports/live-ci.json --live-ci-packet packets/live-ci --json-out reports/release-readiness.json"
     }
     "producer-doctor" {
         Run "$PcsBench producer-doctor --json-out reports/producer-doctor.json --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
@@ -69,7 +76,7 @@ switch ($Target) {
     }
     default {
         Write-Host @"
-Targets: install, fixtures, manifest, schemas, test, bench, ci, gate, producer-gate, producer-gate-release, producer-doctor, check-producer-ingests, sync-ingest-fixtures, packet, html
+Targets: install, fixtures, manifest, schemas, test, bench, ci, gate, producer-gate, producer-gate-release, live-ci, release-check, producer-doctor, check-producer-ingests, sync-ingest-fixtures, packet, html
 Example: .\make.ps1 gate
 "@
     }

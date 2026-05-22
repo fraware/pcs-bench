@@ -13,8 +13,22 @@ PRODUCER_FIXTURE_DIRS: tuple[tuple[str, str], ...] = (
     ("certifyedge", "certifyedge"),
     ("provability-fabric", "provability_fabric"),
     ("scientific-memory", "scientific_memory"),
-    ("labtrust-gym", "labtrust"),
+    ("labtrust-gym", "labtrust_reproducibility"),
 )
+
+LABTRUST_FIXTURE_FALLBACK_DIRS: tuple[str, ...] = (
+    "labtrust_reproducibility",
+    "labtrust",
+)
+
+# Every embedded ingest directory under tests/fixtures/producer_ingest/
+_FIXTURE_DIR_TO_PRODUCER: dict[str, str] = {
+    "certifyedge": "certifyedge",
+    "provability_fabric": "provability-fabric",
+    "scientific_memory": "scientific-memory",
+    "labtrust": "labtrust-gym",
+    "labtrust_reproducibility": "labtrust-gym",
+}
 
 
 @dataclass
@@ -49,9 +63,14 @@ def validate_all_producer_fixtures(
     schema_root = resolve_schema_root(pcs_core)
     results: list[ProducerFixtureValidation] = []
 
-    for producer_id, dirname in PRODUCER_FIXTURE_DIRS:
+    seen_paths: set[Path] = set()
+    for dirname in sorted(_FIXTURE_DIR_TO_PRODUCER):
+        producer_id = _FIXTURE_DIR_TO_PRODUCER[dirname]
         path = fixture_ingest_path(dirname)
-        entry = ProducerFixtureValidation(producer=producer_id, path=path)
+        if path in seen_paths:
+            continue
+        seen_paths.add(path)
+        entry = ProducerFixtureValidation(producer=f"{producer_id}:{dirname}", path=path)
         if not path.is_file():
             entry.errors.append(f"Missing fixture: {path}")
         else:

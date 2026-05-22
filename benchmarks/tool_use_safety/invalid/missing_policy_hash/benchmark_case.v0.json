@@ -13,6 +13,6 @@
   "expected_responsible_component": "certificate_producer",
   "expected_repair_hint_kind": "align_hash",
   "source_repo": "https://github.com/fraware/pcs-bench",
-  "source_commit": "89698646d51d78004774c5502864fc897a1a89d3",
+  "source_commit": "708aa227dee694dcdfe14a8337c6068c2673a7b4",
   "signature_or_digest": "sha256:78fa83db381ae7618a64b413b56955330c458b8c5ac76a2e7adfe4b67e7c69bd"
 }

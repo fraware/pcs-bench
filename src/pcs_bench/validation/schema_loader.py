@@ -95,6 +95,10 @@ def _uses_legacy_metric_summary_ref(schema: dict) -> bool:
 
 def load_artifact_schema(pcs_core_path: Path, artifact_name: str) -> dict | None:
     """Load BenchmarkCase.v0.schema.json style artifact schema."""
+    if artifact_name == "BenchmarkReport.v0":
+        embedded = _embedded_schema_path(artifact_name)
+        if embedded.is_file():
+            return json.loads(embedded.read_text(encoding="utf-8"))
     candidates = _ARTIFACT_SCHEMA_FILES.get(
         artifact_name, [f"{artifact_name}.schema.json", f"{artifact_name}.json"]
     )

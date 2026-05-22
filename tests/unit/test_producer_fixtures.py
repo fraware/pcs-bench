@@ -15,7 +15,14 @@ def test_fixture_root_exists() -> None:
 
 def test_all_producer_fixtures_validate() -> None:
     results = validate_all_producer_fixtures(None)
-    assert len(results) == 4
+    assert len(results) >= 4
+    producers = {r.producer.split(":")[0] for r in results}
+    assert producers == {
+        "certifyedge",
+        "provability-fabric",
+        "scientific-memory",
+        "labtrust-gym",
+    }
     assert all(r.valid for r in results), [r.errors for r in results if not r.valid]
 
 

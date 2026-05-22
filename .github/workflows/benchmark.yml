@@ -90,6 +90,7 @@ jobs:
             reports/producer_gate_result.v0.json
             reports/producer_merge_manifest.v0.json
             packets/producer-ci
+            packets/producer-ci/packet_reproduction_report.v0.json
 
   simulate-gate:
     runs-on: ubuntu-latest

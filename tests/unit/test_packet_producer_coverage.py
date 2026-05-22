@@ -60,7 +60,8 @@ def _report_with_pf_coverage(tmp_path: Path) -> Path:
             ProducerMergeEntry(
                 producer_id="provability-fabric",
                 suite_id="pf-admission-v0",
-                source_repo="https://example.com/pf",
+                workflow_id="labtrust_qc_release",
+                source_repo="https://github.com/SentinelOps-CI/provability-fabric",
                 source_commit="a" * 40,
                 ingest_digest="sha256:" + "b" * 64,
                 ingest_path=str(FIXTURE),

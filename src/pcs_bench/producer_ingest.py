@@ -246,11 +246,17 @@ def ingest_from_pcs_bench_ingest(
 class ProducerMergeEntry:
     producer_id: str
     suite_id: str
+    workflow_id: str
     source_repo: str
     source_commit: str
     ingest_digest: str
     ingest_path: str = ""
     normalized_path: str = ""
+    live_cases: int = 0
+    coverage_count: int = 0
+    explain_count: int = 0
+    failure_localization_count: int = 0
+    profile_coverage_count: int = 0
 
 
 def merge_benchmark_reports(
@@ -306,16 +312,24 @@ def write_producer_merge_manifest(out_path: Path, entries: list[ProducerMergeEnt
     manifest_path = out_path.parent / "producer_merge_manifest.v0.json"
     payload = {
         "schema_version": "v0",
+        "aggregate_report_path": str(out_path.resolve()),
         "aggregate_report": out_path.name,
         "producer_reports": [
             {
                 "producer_id": e.producer_id,
                 "suite_id": e.suite_id,
+                "workflow_id": e.workflow_id,
                 "source_repo": e.source_repo,
                 "source_commit": e.source_commit,
                 "ingest_digest": e.ingest_digest,
                 "ingest_path": e.ingest_path,
+                "normalized_report_path": e.normalized_path,
                 "normalized_path": e.normalized_path,
+                "live_cases": e.live_cases,
+                "coverage_count": e.coverage_count,
+                "explain_count": e.explain_count,
+                "failure_localization_count": e.failure_localization_count,
+                "profile_coverage_count": e.profile_coverage_count,
             }
             for e in entries
         ],

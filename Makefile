@@ -2,7 +2,7 @@
 PYTHON ?= python
 PCS_BENCH = $(PYTHON) -m pcs_bench
 
-.PHONY: install test bench ci gate producer-gate producer-gate-live producer-gate-release producer-doctor fixtures manifest packet schemas lint clean validate-producer-ingest sync-ingest-fixtures check-producer-ingests check-producer-ingest-fixtures
+.PHONY: install test bench ci gate producer-gate producer-gate-live producer-gate-release live-ci release-check producer-doctor fixtures manifest packet schemas lint clean validate-producer-ingest sync-ingest-fixtures check-producer-ingests check-producer-ingest-fixtures
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -69,20 +69,40 @@ producer-gate-live: install
 		--provability-fabric ../provability-fabric \
 		--scientific-memory ../scientific-memory
 
-producer-gate-release: install
+producer-gate-release: live-ci
+
+live-ci: install schemas
 	-$(PCS_BENCH) producer-doctor --json-out reports/producer-doctor.json \
+		--pcs-core ../pcs-core \
+		--labtrust ../LabTrust-Gym \
+		--certifyedge ../CertifyEdge \
+		--provability-fabric ../provability-fabric \
+		--scientific-memory ../scientific-memory \
+		--release-grade
+	$(PCS_BENCH) check-producer-ingests --release-grade \
 		--pcs-core ../pcs-core \
 		--labtrust ../LabTrust-Gym \
 		--certifyedge ../CertifyEdge \
 		--provability-fabric ../provability-fabric \
 		--scientific-memory ../scientific-memory
 	$(PCS_BENCH) gate --suite all --live --run-producer-benchmarks --reproduce-smoke \
-		--out reports/producer-gate.json --out-packet packets/producer-gate \
+		--out reports/live-ci.json --out-packet packets/live-ci \
 		--pcs-core ../pcs-core \
 		--labtrust ../LabTrust-Gym \
 		--certifyedge ../CertifyEdge \
 		--provability-fabric ../provability-fabric \
 		--scientific-memory ../scientific-memory
+
+release-check: install
+	$(PCS_BENCH) release-readiness --strict \
+		--pcs-core ../pcs-core \
+		--labtrust ../LabTrust-Gym \
+		--certifyedge ../CertifyEdge \
+		--provability-fabric ../provability-fabric \
+		--scientific-memory ../scientific-memory \
+		--live-ci-report reports/live-ci.json \
+		--live-ci-packet packets/live-ci \
+		--json-out reports/release-readiness.json
 
 producer-doctor:
 	-$(PCS_BENCH) producer-doctor --json-out reports/producer-doctor.json \

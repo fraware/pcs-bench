@@ -40,6 +40,27 @@ INGEST_EMBEDDED_ARRAYS: dict[str, str] = {
     "ProfileCoverageReport.v0": "profile_coverage_reports",
 }
 
+# LabTrust reproducibility sidecars (provenance only; not embedded in PcsBenchIngest.v0).
+LABTRUST_EXTENDED_ARTIFACT_TYPES = frozenset(
+    {
+        "BenchmarkReport.v0",
+        "LabtrustBenchmarkRunSummary.v0",
+        "LabtrustReproducibilityCoverage.v0",
+        "ReproducibilityBenchmarkManifest.v0",
+        "HashStabilityReport.v0",
+        "RegenerationReport.v0",
+        "PcsBenchIngest.v0",
+    }
+)
+LABTRUST_EXTENDED_ARTIFACT_ROLES = frozenset(
+    {
+        "native_report",
+        "reproducibility_evidence",
+        "regeneration_report",
+        "canonical_ingest",
+    }
+)
+
 PRODUCER_EMBEDDED_REF_FIELDS: dict[str, tuple[str, ...]] = {
     "labtrust-gym": ("benchmark_runs",),
     "certifyedge": ("coverage_reports",),
@@ -130,10 +151,23 @@ def _embedded_objects(data: dict[str, Any], artifact_type: str) -> list[dict[str
     return [row for row in rows if isinstance(row, dict)]
 
 
+def _is_labtrust_extended_artifact_ref(ref: dict[str, Any]) -> bool:
+    atype = ref.get("artifact_type")
+    if atype not in LABTRUST_EXTENDED_ARTIFACT_TYPES:
+        return False
+    role = ref.get("role")
+    if role in LABTRUST_EXTENDED_ARTIFACT_ROLES:
+        return True
+    return atype in (
+        "LabtrustReproducibilityCoverage.v0",
+        "ReproducibilityBenchmarkManifest.v0",
+    ) and role in ("producer_export", "ingest_bundle", "primary")
+
+
 def _validate_artifact_ref_semantics(ref: dict[str, Any], index: int) -> list[str]:
     errors: list[str] = []
     artifact_type = ref.get("artifact_type")
-    if artifact_type not in INGEST_EMBEDDED_ARRAYS:
+    if artifact_type not in INGEST_EMBEDDED_ARRAYS and not _is_labtrust_extended_artifact_ref(ref):
         errors.append(f"artifact_refs[{index}]: unsupported artifact_type {artifact_type!r}")
     path = ref.get("path")
     if not isinstance(path, str) or not path.strip():
@@ -204,6 +238,10 @@ def validate_ingest_semantics(data: dict[str, Any]) -> list[str]:
         path = ref.get("path")
         if isinstance(path, str):
             paths.append(path)
+        if _is_labtrust_extended_artifact_ref(ref):
+            if isinstance(sha256, str):
+                ref_keys.add((artifact_type, sha256))
+            continue
         embedded = _embedded_objects(data, artifact_type)
         if not embedded:
             errors.append(f"artifact_refs[{index}]: no embedded objects for {artifact_type!r}")
@@ -314,6 +352,10 @@ def validate_ingest_release_adequacy(
     if _ALL_ZERO_COMMIT_RE.match(commit):
         errors.append("release-grade: source_commit must not be all zeros")
 
+    commands = data.get("commands")
+    if not isinstance(commands, list) or len(commands) == 0:
+        errors.append("release-grade: commands must be non-empty for live producer ingests")
+
     if isinstance(runs, list) and runs:
         all_weak = True
         for idx, run in enumerate(runs):
@@ -339,10 +381,14 @@ def validate_ingest_release_adequacy(
     refs = data.get("artifact_refs")
     if isinstance(refs, list) and search_roots and _should_check_artifact_sidecars(search_roots):
         for index, ref in enumerate(refs):
-            if isinstance(ref, dict):
-                missing = _artifact_ref_sidecar_missing(ref, index, search_roots)
-                if missing:
-                    errors.append(f"release-grade: {missing}")
+            if not isinstance(ref, dict):
+                continue
+            artifact_type = str(ref.get("artifact_type", ""))
+            if artifact_type not in INGEST_EMBEDDED_ARRAYS:
+                continue
+            missing = _artifact_ref_sidecar_missing(ref, index, search_roots)
+            if missing:
+                errors.append(f"release-grade: {missing}")
 
     return errors
 
@@ -375,6 +421,16 @@ def validate_ingest_via_pcs_cli(data_path: Path, pcs_core_repo: Path) -> list[st
     return [f"pcs validate: {stderr[:500]}"]
 
 
+def _pcs_core_ingest_body(data: dict[str, Any]) -> dict[str, Any]:
+    """Ingest document with only pcs-core-compatible artifact_refs for schema validation."""
+    refs = list(data.get("artifact_refs") or [])
+    pcs_refs = [ref for ref in refs if isinstance(ref, dict) and not _is_labtrust_extended_artifact_ref(ref)]
+    body = {k: v for k, v in data.items() if k != "artifact_refs"}
+    if pcs_refs:
+        body["artifact_refs"] = pcs_refs
+    return body
+
+
 def validate_ingest_data_strict(
     data: dict[str, Any],
     pcs_core_path: Path,
@@ -387,7 +443,7 @@ def validate_ingest_data_strict(
     """Validate ingest JSON against PcsBenchIngest.v0 and nested artifact schemas."""
     from pcs_bench.validation.schema_loader import validate_instance
 
-    errors = validate_instance(data, "PcsBenchIngest.v0", pcs_core_path)
+    errors = validate_instance(_pcs_core_ingest_body(data), "PcsBenchIngest.v0", pcs_core_path)
     errors.extend(validate_ingest_semantics(data))
     if release_grade:
         errors.extend(validate_ingest_release_adequacy(data, search_roots=search_roots))
@@ -438,7 +494,7 @@ def validate_ingest_data_strict(
             )
 
     for idx, ref in enumerate(data.get("artifact_refs") or []):
-        if isinstance(ref, dict):
+        if isinstance(ref, dict) and not _is_labtrust_extended_artifact_ref(ref):
             errors.extend(
                 _prefix_errors(
                     validate_instance(ref, "BenchmarkArtifactRef.v0", pcs_core_path),

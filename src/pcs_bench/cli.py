@@ -471,6 +471,11 @@ def gate_cmd(
         "--use-producer-fixtures",
         help="Use embedded golden ingests when a producer repo has no pcs_bench_ingest.v0.json.",
     ),
+    refresh_producer_ingests: bool = typer.Option(
+        False,
+        "--refresh-producer-ingests",
+        help="Re-run producer-native benchmarks even when a release-grade canonical ingest already exists.",
+    ),
     reproduce_smoke: bool = typer.Option(
         False,
         "--reproduce-smoke",
@@ -554,6 +559,16 @@ def gate_cmd(
     if run_producer_benchmarks:
         from pcs_bench.producer_gate import aggregate_gate_report
 
+        if use_producer_fixtures and live and not hybrid:
+            console.print(
+                "[red]Release-grade gate cannot use --use-producer-fixtures with --live.[/red]"
+            )
+            console.print(
+                "[yellow]Use make producer-gate for offline fixtures, or "
+                "make producer-gate-release for live producer ingests.[/yellow]"
+            )
+            raise typer.Exit(1)
+
         console.print("[bold]gate[/bold] aggregate producer ingests")
         scratch = out.parent / ".gate-producer-scratch"
         producer_release_grade = (live or hybrid) and not use_producer_fixtures
@@ -566,6 +581,7 @@ def gate_cmd(
             require_all_producers=True,
             use_fixture_fallback=use_producer_fixtures,
             release_grade=producer_release_grade,
+            refresh_producer_ingests=refresh_producer_ingests,
         )
         if agg_errors:
             console.print("[red]Producer ingest aggregation failed:[/red]")
@@ -629,10 +645,10 @@ def validate_producer_fixtures_cmd(
     failed = False
     for result in results:
         if result.valid:
-            console.print(f"[green]OK[/green] {result.producer}")
+            console.print(f"[green]OK[/green] {result.producer} {result.path}")
         else:
             failed = True
-            console.print(f"[red]FAIL[/red] {result.producer}")
+            console.print(f"[red]FAIL[/red] {result.producer} {result.path}")
             for err in result.errors:
                 console.print(f"  - {err}")
     if failed:
@@ -835,6 +851,11 @@ def producer_doctor_cmd(
         "--json-out",
         help="Write structured JSON report to this path.",
     ),
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Exit with code 2 when any producer is not ready (default: always exit 0).",
+    ),
 ) -> None:
     """Diagnose producer repo readiness (non-gating)."""
     import json as json_mod
@@ -881,7 +902,86 @@ def producer_doctor_cmd(
     else:
         console.print(json_mod.dumps(payload, indent=2))
 
-    if not payload.get("all_ready"):
+    if strict and not payload.get("all_ready"):
+        raise typer.Exit(2)
+
+
+@app.command("release-readiness")
+def release_readiness_cmd(
+    config: Optional[Path] = typer.Option(None, "--config"),
+    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
+    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
+    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+    live_ci_report: Optional[Path] = typer.Option(
+        None,
+        "--live-ci-report",
+        help="Verify reports/live-ci.json schema and release evidence_grade.",
+    ),
+    live_ci_packet: Optional[Path] = typer.Option(
+        None,
+        "--live-ci-packet",
+        help="Verify packets/live-ci with --reproduce-smoke.",
+    ),
+    skip_fixtures: bool = typer.Option(
+        False,
+        "--skip-fixtures",
+        help="Skip embedded golden fixture validation.",
+    ),
+    json_out: Optional[Path] = typer.Option(None, "--json-out"),
+    strict: bool = typer.Option(
+        False,
+        "--strict",
+        help="Exit 2 when not release-ready.",
+    ),
+) -> None:
+    """One-shot PCS release readiness: doctor, ingests, fixtures, optional live-ci artifacts."""
+    import json as json_mod
+
+    from pcs_bench.producer_fixtures import resolve_schema_root
+    from pcs_bench.release_readiness import evaluate_release_readiness
+
+    cfg = _load_config(config).apply_cli_overrides(
+        pcs_core=pcs_core,
+        labtrust=labtrust,
+        certifyedge=certifyedge,
+        provability_fabric=provability_fabric,
+        scientific_memory=scientific_memory,
+    )
+    schema_root = resolve_schema_root(cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None)
+    readiness = evaluate_release_readiness(
+        cfg,
+        schema_root=schema_root,
+        release_grade=True,
+        verify_live_ci=live_ci_report,
+        verify_live_packet=live_ci_packet,
+        include_fixture_validation=not skip_fixtures,
+    )
+
+    table = Table("Check", "Status", "Detail")
+    for check in readiness.checks:
+        ok = check.get("ok", False)
+        table.add_row(
+            str(check.get("name", "")),
+            "[green]ok[/green]" if ok else "[red]fail[/red]",
+            str(check.get("detail", ""))[:72],
+        )
+    console.print(table)
+
+    payload = readiness.to_dict()
+    if json_out:
+        json_out.parent.mkdir(parents=True, exist_ok=True)
+        json_out.write_text(json_mod.dumps(payload, indent=2), encoding="utf-8")
+        console.print(f"[dim]Wrote[/dim] {json_out}")
+
+    if readiness.ready:
+        console.print("[green]PCS release readiness: OK[/green]")
+        return
+    console.print("[red]PCS release readiness: NOT READY[/red]")
+    for err in readiness.errors:
+        console.print(f"  - {err}")
+    if strict:
         raise typer.Exit(2)
 
 

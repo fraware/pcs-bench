@@ -101,6 +101,32 @@ def test_aggregate_gate_report_from_fixtures(tmp_path: Path) -> None:
     assert manifest["producer_reports"][0]["ingest_digest"].startswith("sha256:")
 
 
+def test_aggregate_gate_report_marks_fixture_fallback(tmp_path: Path) -> None:
+    cfg = BenchConfig(
+        repos={
+            "pcs_core": tmp_path / "no-pcs-core",
+            "labtrust": tmp_path / "no-labtrust",
+            "certifyedge": tmp_path / "no-certifyedge",
+            "provability_fabric": tmp_path / "no-pf",
+            "scientific_memory": tmp_path / "no-sm",
+        }
+    )
+    bench_path = _bench_only_report(tmp_path)
+    out = tmp_path / "aggregate.json"
+    errors = aggregate_gate_report(
+        cfg,
+        bench_path,
+        scratch_dir=tmp_path / "scratch",
+        run_producer_benchmarks=False,
+        out_path=out,
+        use_fixture_fallback=True,
+    )
+    assert errors == []
+    merged = load_report(out)
+    assert merged.summary.get("fixture_fallback_used") is True
+    assert merged.summary.get("evidence_grade") == "developer"
+
+
 def test_collect_producer_ingests_fixture_fallback(tmp_path: Path) -> None:
     cfg = BenchConfig(
         repos={

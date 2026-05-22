@@ -62,7 +62,10 @@ pcs-bench ingest-producer-output --producer certifyedge --input ../CertifyEdge/b
 # Producer diagnostics and contracts (see docs/producer-contracts.md)
 pcs-bench producer-doctor --pcs-core ../pcs-core --json-out reports/producer-doctor.json
 make producer-gate                    # offline: fixture ingest fallback
-make producer-gate-release            # live: release-grade, no fixture fallback
+make producer-gate-release            # alias for live-ci
+make live-ci                          # live release gate → reports/live-ci.json, packets/live-ci
+make release-check                    # verify producers + live-ci artifacts (after live-ci)
+pcs-bench release-readiness --strict  # one-shot readiness (see docs/PCS_RELEASE_CHECKLIST.md)
 
 # Gate with producer benchmarks (live)
 pcs-bench gate --suite all --live --run-producer-benchmarks --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory

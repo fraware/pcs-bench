@@ -24,12 +24,14 @@ from pcs_bench.producer_contracts import (
 )
 from pcs_bench.producer_fixtures import PRODUCER_FIXTURE_DIRS, fixture_ingest_path
 from pcs_bench.producer_artifacts import write_producer_gate_result
+from pcs_bench.ingest_validation import validate_ingest_json
 from pcs_bench.producer_ingest import (
     ProducerMergeEntry,
     ingest_producer_output,
     merge_benchmark_reports,
     write_producer_merge_manifest,
 )
+from pcs_bench.producer_fixtures import resolve_schema_root
 from pcs_bench.reports import load_report, save_report
 from pcs_bench.schemas import BenchmarkReport
 
@@ -74,6 +76,14 @@ def _log_path_selection(producer: str, kind: str, selected: str) -> None:
 
 
 def _embedded_fixture_ingest(producer: str) -> Path | None:
+    from pcs_bench.producer_fixtures import LABTRUST_FIXTURE_FALLBACK_DIRS
+
+    if producer == "labtrust-gym":
+        for dirname in LABTRUST_FIXTURE_FALLBACK_DIRS:
+            path = fixture_ingest_path(dirname)
+            if path.is_file():
+                return path
+        return None
     for producer_id, dirname in PRODUCER_FIXTURE_DIRS:
         if producer_id == producer:
             path = fixture_ingest_path(dirname)
@@ -153,14 +163,28 @@ def _merge_entry_from_ingest(
     normalized_path: Path,
 ) -> ProducerMergeEntry:
     data = json.loads(ingest_path.read_text(encoding="utf-8"))
+    runs = data.get("benchmark_runs") or []
+    live_cases = sum(
+        1
+        for row in runs
+        if isinstance(row, dict) and str(row.get("execution_kind", "live")) == "live"
+    )
+    if not live_cases and runs:
+        live_cases = len(runs)
     return ProducerMergeEntry(
         producer_id=producer,
         suite_id=str(data.get("suite_id", producer)),
+        workflow_id=str(data.get("workflow_id", "")),
         source_repo=str(data.get("source_repo", "")),
         source_commit=str(data.get("source_commit", "")),
         ingest_digest=str(data.get("signature_or_digest", "")),
         ingest_path=str(ingest_path.resolve()),
         normalized_path=str(normalized_path.resolve()),
+        live_cases=live_cases,
+        coverage_count=len(data.get("coverage_reports") or []),
+        explain_count=len(data.get("explain_quality_reports") or []),
+        failure_localization_count=len(data.get("failure_localization_reports") or []),
+        profile_coverage_count=len(data.get("profile_coverage_reports") or []),
     )
 
 
@@ -221,7 +245,7 @@ def run_producer_benchmark(
                 )
     elif spec.producer == "provability-fabric":
         cases_path, cases_rel = resolve_cases_dir(repo, contract)
-        registry = resolve_pf_registry(repo)
+        registry = resolve_pf_registry(repo, pcs_core=cfg.repos.pcs_core)
         if not cases_path:
             outcome.errors.append(
                 f"no benchmark cases directory under {repo} "
@@ -276,6 +300,30 @@ def run_producer_benchmark(
     return outcome
 
 
+def _canonical_ingest_release_ready(
+    repo: Path,
+    contract: ProducerContract,
+    *,
+    schema_root: Path,
+    release_grade: bool,
+) -> Path | None:
+    """Return canonical ingest path when it already satisfies release-grade validation."""
+    if not release_grade:
+        return None
+    canonical = resolve_canonical_ingest_path(repo, contract)
+    if not canonical.is_file():
+        return None
+    errors = validate_ingest_json(
+        canonical,
+        schema_root,
+        release_grade=True,
+        producer_repo=repo,
+    )
+    if errors:
+        return None
+    return canonical
+
+
 def collect_producer_ingests(
     cfg: BenchConfig,
     *,
@@ -283,19 +331,41 @@ def collect_producer_ingests(
     run_benchmarks: bool = True,
     use_fixture_fallback: bool = False,
     release_grade: bool = False,
+    refresh_producer_ingests: bool = False,
 ) -> ProducerGateResult:
     """Run producer benchmarks (optional) and ingest all PcsBenchIngest.v0 files."""
     result = ProducerGateResult()
     scratch_dir.mkdir(parents=True, exist_ok=True)
     strict = release_grade and not use_fixture_fallback
+    schema_root = resolve_schema_root(
+        cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None
+    )
 
     for spec in PRODUCER_BENCHMARKS:
         repo = _repo_for_producer(cfg, spec.producer)
         ingest_path: Path | None = None
         from_repo = repo.is_dir()
+        contract = contract_for(spec.producer)
 
         benchmark_errors: list[str] = []
-        try_live_benchmark = run_benchmarks and from_repo and not use_fixture_fallback
+        if contract and from_repo and strict and not refresh_producer_ingests:
+            ready = _canonical_ingest_release_ready(
+                repo, contract, schema_root=schema_root, release_grade=True
+            )
+            if ready is not None:
+                ingest_path = ready
+                _log_path_selection(
+                    spec.producer,
+                    "ingest",
+                    f"canonical_release_ready:{rel_path_under_repo(ready, repo)}",
+                )
+
+        try_live_benchmark = (
+            run_benchmarks
+            and from_repo
+            and not use_fixture_fallback
+            and ingest_path is None
+        )
         if try_live_benchmark:
             run_outcome = run_producer_benchmark(cfg, spec, scratch_dir=scratch_dir)
             benchmark_errors = list(run_outcome.errors)
@@ -411,6 +481,7 @@ def aggregate_gate_report(
     require_all_producers: bool = True,
     use_fixture_fallback: bool = False,
     release_grade: bool = False,
+    refresh_producer_ingests: bool = False,
 ) -> list[str]:
     """Merge producer ingests with pcs-bench run report and write aggregate output."""
     errors: list[str] = []
@@ -420,6 +491,7 @@ def aggregate_gate_report(
         run_benchmarks=run_producer_benchmarks,
         use_fixture_fallback=use_fixture_fallback,
         release_grade=release_grade,
+        refresh_producer_ingests=refresh_producer_ingests,
     )
     errors.extend(producer_result.errors)
 
@@ -444,6 +516,10 @@ def aggregate_gate_report(
     )
     merged.summary["producer_reports_merged"] = len(producer_result.reports)
     merged.summary["producer_ingest_errors"] = len(producer_result.errors)
+    if use_fixture_fallback:
+        merged.summary["evidence_grade"] = "developer"
+        merged.summary["fixture_fallback_used"] = True
+        merged.summary["execution_mode"] = "simulate"
     finalize_merged_gate_report(merged)
     save_report(merged, out_path, pcs_core_path=cfg.repos.pcs_core)
     if producer_result.merge_entries:

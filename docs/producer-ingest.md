@@ -139,10 +139,22 @@ Use `--reproduce-smoke` on `gate` to run the same checks on the exported packet.
 ## Release integration (no fixture fallback)
 
 ```bash
-make producer-gate-release
+make live-ci
+# alias: make producer-gate-release
 ```
 
-Runs `producer-doctor` (diagnostic), then `gate --live --run-producer-benchmarks` with release-grade ingest adequacy. Producer benchmarks write to canonical `benchmark_runs/<suite>/` paths and promote scratch ingests when needed.
+Runs schema sync, `producer-doctor --release-grade`, `check-producer-ingests --release-grade`, then `gate --live --run-producer-benchmarks` producing `reports/live-ci.json` and `packets/live-ci`.
+
+Release-grade gates **reuse** a valid canonical `pcs_bench_ingest.v0.json` when present (logged as `canonical_release_ready`). Re-run producer CLIs only when ingest is missing or invalid, or pass `--refresh-producer-ingests` on `gate`.
+
+Before `make live-ci`, refresh each producer ingest:
+
+```bash
+cd ../LabTrust-Gym && make pcs-bench-producer
+cd ../CertifyEdge && make pcs-bench-producer
+cd ../provability-fabric && make pcs-bench-producer
+cd ../scientific-memory && make pcs-bench-producer
+```
 
 ## Offline fixtures
 

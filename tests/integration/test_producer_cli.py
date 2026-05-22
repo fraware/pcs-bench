@@ -35,6 +35,12 @@ def test_validate_ingest_cli() -> None:
     assert result.exit_code == 0, result.output
 
 
+def test_producer_doctor_strict_exits_when_not_ready() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["producer-doctor", "--strict"], catch_exceptions=False)
+    assert result.exit_code in (0, 2)
+
+
 def test_producer_doctor_cli_json(tmp_path: Path) -> None:
     runner = CliRunner()
     json_out = tmp_path / "doctor.json"
@@ -43,18 +49,24 @@ def test_producer_doctor_cli_json(tmp_path: Path) -> None:
         ["producer-doctor", "--json-out", str(json_out)],
         catch_exceptions=False,
     )
-    assert result.exit_code in (0, 2), result.output
+    assert result.exit_code == 0, result.output
     if json_out.is_file():
         payload = json.loads(json_out.read_text(encoding="utf-8"))
         assert payload.get("schema_version") == "v0"
         assert "producers" in payload
 
 
-def test_validate_ingest_release_grade_cli_fails_on_fixture() -> None:
+def test_validate_ingest_release_grade_cli_fails_on_bad_commit(tmp_path: Path) -> None:
+    import json
+
+    bad = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    bad["source_commit"] = "0" * 40
+    bad_path = tmp_path / "bad_ingest.json"
+    bad_path.write_text(json.dumps(bad), encoding="utf-8")
     runner = CliRunner()
     result = runner.invoke(
         app,
-        ["validate-ingest", "--input", str(FIXTURE), "--release-grade"],
+        ["validate-ingest", "--input", str(bad_path), "--release-grade"],
         catch_exceptions=False,
     )
     assert result.exit_code == 1, result.output

@@ -19,6 +19,7 @@ def test_write_producer_gate_result(tmp_path: Path) -> None:
         ProducerMergeEntry(
             producer_id="certifyedge",
             suite_id="s",
+            workflow_id="tool_use_safety",
             source_repo="https://example.com",
             source_commit="a" * 40,
             ingest_digest="sha256:" + "b" * 64,

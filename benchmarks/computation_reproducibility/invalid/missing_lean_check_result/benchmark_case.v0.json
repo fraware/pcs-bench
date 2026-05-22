@@ -13,6 +13,6 @@
   "expected_responsible_component": "formal_kernel",
   "expected_repair_hint_kind": "rerun_formal_check",
   "source_repo": "https://github.com/fraware/pcs-bench",
-  "source_commit": "89698646d51d78004774c5502864fc897a1a89d3",
+  "source_commit": "708aa227dee694dcdfe14a8337c6068c2673a7b4",
   "signature_or_digest": "sha256:561cd2bd7ade8791b4d935e471f472876484d4c738570f2e6e635bc6e9d7229b"
 }

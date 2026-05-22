@@ -189,7 +189,7 @@ def verify_benchmark_packet(
                     result.valid = False
 
     if reproduce_smoke:
-        smoke_report = _verify_reproduce_smoke(packet_dir, result)
+        smoke_report = _verify_reproduce_smoke(packet_dir, result, cfg)
         smoke_path = packet_dir / "packet_reproduction_report.v0.json"
         smoke_path.write_text(json.dumps(smoke_report, indent=2), encoding="utf-8")
         if not smoke_report.get("passed", False):
@@ -201,6 +201,7 @@ def verify_benchmark_packet(
 def _verify_reproduce_smoke(
     packet_dir: Path,
     result: PacketVerificationResult,
+    cfg: BenchConfig,
 ) -> dict[str, Any]:
     """Re-run lightweight reproduction checks; return packet_reproduction_report.v0 payload."""
     from pcs_bench.benchmark_vocabulary import BENCHMARK_FAILED, BENCHMARK_PASSED
@@ -271,6 +272,9 @@ def _verify_reproduce_smoke(
 
     producer_checks = _verify_producer_coverage_smoke(packet_dir, result)
     checks.update(producer_checks)
+
+    ingest_checks = _verify_packet_producer_ingests(packet_dir, result, cfg)
+    checks.update(ingest_checks)
 
     render_case = next(
         (
@@ -376,6 +380,50 @@ def _export_producer_coverage_artifacts(report_path: Path, out_dir: Path) -> Non
         coverage = data.get("coverage") or {}
         for key in _COVERAGE_EXPORT_KEYS:
             _write_coverage_block(dest, f"{key}.json", coverage.get(key, {}))
+
+
+def _verify_packet_producer_ingests(
+    packet_dir: Path,
+    result: PacketVerificationResult,
+    cfg: BenchConfig,
+) -> dict[str, Any]:
+    """Validate PcsBenchIngest.v0 files bundled under producer_ingests/."""
+    from pcs_bench.ingest_validation import validate_ingest_json
+    from pcs_bench.producer_fixtures import resolve_schema_root
+
+    checks: dict[str, Any] = {}
+    bundle_root = packet_dir / "producer_ingests"
+    if not bundle_root.is_dir():
+        return checks
+
+    schema_root = resolve_schema_root(
+        cfg.repos.pcs_core if cfg.repos.pcs_core.is_dir() else None
+    )
+    for producer_dir in sorted(bundle_root.iterdir()):
+        if not producer_dir.is_dir():
+            continue
+        ingest_path = producer_dir / "ingest.json"
+        if not ingest_path.is_file():
+            for candidate in producer_dir.glob("ingest*.json"):
+                ingest_path = candidate
+                break
+        key = f"producer_ingest_{producer_dir.name}"
+        if not ingest_path.is_file():
+            result.errors.append(
+                f"reproduce-smoke: missing ingest under producer_ingests/{producer_dir.name}/"
+            )
+            result.valid = False
+            checks[key] = {"ok": False, "detail": "missing ingest.json"}
+            continue
+        errors = validate_ingest_json(ingest_path, schema_root, release_grade=False)
+        if errors:
+            for err in errors[:5]:
+                result.errors.append(f"reproduce-smoke {producer_dir.name}: {err}")
+            result.valid = False
+            checks[key] = {"ok": False, "errors": errors[:5]}
+        else:
+            checks[key] = {"ok": True, "path": str(ingest_path.name)}
+    return checks
 
 
 def _verify_producer_coverage_smoke(

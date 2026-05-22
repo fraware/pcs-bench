@@ -23,6 +23,7 @@ from pcs_bench.producer_contracts import (
     ProducerContract,
     repo_for_contract,
     resolve_first_existing,
+    resolve_native_producer_target,
     resolve_pf_registry,
 )
 from pcs_bench.producer_fixtures import fixture_ingest_path
@@ -194,10 +195,17 @@ def _check_native_command(adapter, contract: ProducerContract) -> DoctorCheck:
     return DoctorCheck("native_command", True, contract.native_benchmark_command[:80] + "...")
 
 
-def _check_pf_registry(repo: Path, contract: ProducerContract) -> DoctorCheck | None:
+def _check_native_producer_target(repo: Path, contract: ProducerContract) -> DoctorCheck:
+    ok, detail = resolve_native_producer_target(repo, contract)
+    return DoctorCheck("native_producer_target", ok, detail)
+
+
+def _check_pf_registry(
+    repo: Path, contract: ProducerContract, *, pcs_core: Path | None
+) -> DoctorCheck | None:
     if contract.producer_id != "provability-fabric":
         return None
-    registry = resolve_pf_registry(repo)
+    registry = resolve_pf_registry(repo, pcs_core=pcs_core)
     if registry:
         return DoctorCheck("pf_registry", True, rel_path_under_repo(registry, repo))
     return DoctorCheck("pf_registry", False, "profiles/registry.json or registry.json missing")
@@ -221,8 +229,10 @@ def diagnose_producer(
     adapter = _adapter_for(contract, repo, cfg)
     report.checks.append(_check_cli_smoke(adapter))
     report.checks.append(_check_native_command(adapter, contract))
+    report.checks.append(_check_native_producer_target(repo, contract))
     report.checks.append(_check_cases_dir(repo, contract))
-    pf_registry = _check_pf_registry(repo, contract)
+    pcs_core = schema_root if schema_root.is_dir() else None
+    pf_registry = _check_pf_registry(repo, contract, pcs_core=pcs_core)
     if pf_registry:
         report.checks.append(pf_registry)
     report.checks.append(_check_output_dir_writable(repo, contract))
@@ -241,7 +251,11 @@ def diagnose_producer(
         )
     )
 
-    report.ready = all(c.ok for c in report.checks if c.name != "fixture_fallback")
+    report.ready = all(
+        c.ok
+        for c in report.checks
+        if c.name not in ("fixture_fallback", "native_command")
+    )
     return report
 
 

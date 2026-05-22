@@ -65,6 +65,14 @@ def test_release_grade_skips_sidecar_check_on_fixture_roots() -> None:
     assert not any("sidecar file missing" in e for e in errors)
 
 
+def test_release_grade_rejects_empty_commands() -> None:
+    doc, _ = load_ingest_document(FIXTURE_ROOT / "labtrust/pcs_bench_ingest.v0.json")
+    bad = deepcopy(doc)
+    bad["commands"] = []
+    errors = validate_ingest_release_adequacy(bad)
+    assert any("commands" in e for e in errors)
+
+
 def test_release_grade_rejects_all_zero_commit() -> None:
     doc, _ = load_ingest_document(FIXTURE_ROOT / "labtrust/pcs_bench_ingest.v0.json")
     bad = deepcopy(doc)

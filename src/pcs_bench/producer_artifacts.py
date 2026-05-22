@@ -71,12 +71,22 @@ def write_producer_gate_result(
 ) -> Path:
     """Write structured producer gate summary beside the aggregate report."""
     result_path = report_path.parent / "producer_gate_result.v0.json"
+    summary: dict[str, Any] = {}
+    if report_path.is_file():
+        try:
+            data = json.loads(report_path.read_text(encoding="utf-8"))
+            summary = data.get("summary") or {}
+        except json.JSONDecodeError:
+            summary = {}
+
     payload: dict[str, Any] = {
         "schema_version": "v0",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "aggregate_report": report_path.name,
         "release_grade": release_grade,
         "use_fixture_fallback": use_fixture_fallback,
+        "evidence_grade": summary.get("evidence_grade"),
+        "fixture_fallback_used": summary.get("fixture_fallback_used"),
         "passed": not errors,
         "errors": errors,
         "producers_ingested": len(merge_entries),

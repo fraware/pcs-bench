@@ -60,6 +60,10 @@ class LabTrustAdapter(RepoAdapter):
             [
                 self._binary(),
                 "benchmark-reproducibility",
+                "--workflow",
+                "hospital_lab.qc_release",
+                "--mode",
+                "full_regeneration",
                 "--pcs-core",
                 str(self.config.repos.pcs_core),
                 "--certifyedge-bin",
@@ -68,6 +72,9 @@ class LabTrustAdapter(RepoAdapter):
                 str(runs),
                 "--out",
                 str(out_dir),
+                "--validate-pcs-core-output",
+                str(self.config.repos.pcs_core),
+                "--release-grade",
             ]
         )
 
