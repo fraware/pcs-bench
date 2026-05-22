@@ -123,8 +123,10 @@ def test_aggregate_gate_report_marks_fixture_fallback(tmp_path: Path) -> None:
     )
     assert errors == []
     merged = load_report(out)
-    assert merged.summary.get("fixture_fallback_used") is True
     assert merged.summary.get("evidence_grade") == "developer"
+    gate_result = json.loads((out.parent / "producer_gate_result.v0.json").read_text(encoding="utf-8"))
+    assert gate_result.get("use_fixture_fallback") is True
+    assert gate_result.get("fixture_fallback_used") is True
 
 
 def test_collect_producer_ingests_fixture_fallback(tmp_path: Path) -> None:

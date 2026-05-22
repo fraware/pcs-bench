@@ -1,4 +1,4 @@
-# Benchmark Methodology
+# Benchmark methodology
 
 ## Principles
 
@@ -13,9 +13,9 @@ Each suite under `benchmarks/<name>/` contains:
 
 - `suite.yaml` — suite metadata and case references
 - `valid/` and `invalid/` — case directories with `benchmark_case.v0.json` and `input_artifacts/`
-- `README.md` — suite-specific documentation
+- `README.md` — suite-specific documentation (optional)
 
-## LabTrust QC release path (MVP)
+## LabTrust QC release path
 
 For `hospital_lab.qc_release` cases:
 
@@ -26,4 +26,4 @@ For `hospital_lab.qc_release` cases:
 
 ## Dry-run mode
 
-`pcs-bench run --dry-run` plans execution and produces a report without invoking external binaries. Use for CI scaffolding and local development without sibling repos installed.
+`pcs-bench run --dry-run` plans execution and produces a report without invoking external binaries. Use for scaffolding and local development without sibling repositories installed.

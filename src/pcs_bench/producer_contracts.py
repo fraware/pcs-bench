@@ -1,4 +1,4 @@
-"""Producer contract matrix — implementation reference for producer_gate and producer-doctor."""
+"""Producer contract matrix — implementation reference (see docs/producers.md)."""
 
 from __future__ import annotations
 

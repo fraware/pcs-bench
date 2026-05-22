@@ -1,74 +1,77 @@
 # Architecture
 
-pcs-bench is an **evaluation harness** that orchestrates the PCS ecosystem from the outside. It does not own PCS schemas, certificates, workflows, admission logic, or rendering.
+pcs-bench is an evaluation harness that orchestrates the PCS ecosystem from the outside. It does not own PCS schemas, certificates, workflows, admission logic, or rendering.
 
 ## Evidence chain under evaluation
 
 ```
 runtime evidence
   -> certificate or witness
-  -> certified claim bundle
-  -> verifier admission
-  -> signed science claim bundle
-  -> formal trust-envelope check
-  -> Scientific Memory import and rendering
+    -> certified claim bundle
+    -> verifier admission
+    -> signed science claim bundle
+    -> formal trust-envelope check
+    -> scientific-memory import and rendering
 ```
 
 ## Execution modes
 
 | Mode | Flag | Behavior |
 |------|------|----------|
-| Simulate | `--simulate` (default) | Fixture sidecars + artifact analysis; no CLIs required |
-| Live | `--live` | Invokes pcs, labtrust, certifyedge, pf, just |
-| Hybrid | `--hybrid` | Live first; fixture fallback when CLIs exit 127 |
-| Dry-run | `--dry-run` | Planning only; fastest |
+| Simulate | `--simulate` (default) | Expected outcome files + artifact analysis; no CLIs required |
+| Live | `--live` | Invokes pcs-core, LabTrust, CertifyEdge, provability-fabric, scientific-memory CLIs |
+| Hybrid | `--hybrid` | Live first; expected outcomes when CLIs exit 127 |
+| Dry run | `--dry-run` | Planning only |
 
-Suites may set `live_required_for_release: true` (LabTrust). CI with `--ci` fails if such suites run with zero `live_cases`.
+See [Running benchmarks](execution.md) for gates and evidence levels.
 
-## Release gate
+## Release gate pipeline
 
-`pcs-bench gate` runs: materialize fixtures → fixture manifest verify → validate cases → validate producer ingest fixtures → benchmark with `--ci` → (optional) aggregate producer `PcsBenchIngest.v0` → `validate-report` → export packet → `verify-packet` (optional `--reproduce-smoke`).
+`pcs-bench gate` runs:
 
-With `--run-producer-benchmarks`, the gate runs producer-native benchmarks, ingests four `pcs_bench_ingest.v0.json` files, and merges them with pcs-bench-owned suites into one `BenchmarkReport.v0`. See [Producer ingest](producer-ingest.md).
+1. Materialize fixtures
+2. Verify fixture manifest
+3. Validate cases
+4. Validate reference producer ingests
+5. Benchmark with `--ci`
+6. Optionally aggregate producer `PcsBenchIngest.v0` (`--run-producer-benchmarks`)
+7. Validate report against `BenchmarkReport.v0`
+8. Export packet
+9. Verify packet (optional `--reproduce-smoke`)
 
-GitHub Actions runs the same simulate gate on every PR; optional workflow dispatch runs the LabTrust live gate when sibling repos are available.
+With `--run-producer-benchmarks`, the gate merges four producer ingests with pcs-bench suites. See [Producer integration](producers.md).
 
-## Pipeline
+## Pipeline stages
 
 Workflow-specific stage lists live in `pipeline/registry.py`:
 
-- **RELEASE_PIPELINE** — validate chain, runtime verify, CertifyEdge, PF admission/explain, Scientific Memory, Lean
-- **FORMAL_PIPELINE** — Lean obligations and check results
-- **MEMORY_PIPELINE** — import, render, staleness
+- **Release pipeline** — validate chain, runtime verify, CertifyEdge, admission, scientific-memory, Lean
+- **Formal pipeline** — Lean obligations and check results
+- **Memory pipeline** — import, render, staleness
 
 Each stage records commands in `CaseExecutionContext` and writes `artifact_analysis.json` per case.
 
-## Components
+## Main modules
 
 | Module | Responsibility |
 |--------|----------------|
-| `cli.py` | Typer CLI: run, gate, report, compare, validate-cases, validate-report, validate-ingest, ingest-producer-output, verify-packet, sync-schemas, explain, check-adapters |
-| `producer_ingest.py` | `PcsBenchIngest.v0` → `BenchmarkReport.v0` normalization |
+| `cli.py` | Command-line interface |
+| `producer_ingest.py` | `PcsBenchIngest.v0` to `BenchmarkReport.v0` normalization |
 | `producer_gate.py` | Producer benchmark orchestration and gate aggregation |
-| `ingest_validation.py` | Strict ingest schema + policy validation |
+| `producer_doctor.py` | Producer readiness diagnostics |
+| `ingest_validation.py` | Ingest schema and release-grade validation |
 | `pipeline/` | Declarative evaluation stages |
-| `artifacts.py` | Certificate, registry, and rendering completeness analysis |
-| `simulation.py` | Expected sidecar loading for offline evaluation |
-| `config.py` | `pcs-bench.yaml` loading and CLI overrides |
-| `adapters/` | CLI wrappers for pcs-core, LabTrust, CertifyEdge, PF, Scientific Memory |
+| `artifacts.py` | Certificate, registry, and rendering analysis |
+| `simulation.py` | Expected outcome loading for offline evaluation |
+| `adapters/` | CLI wrappers for ecosystem repositories |
 | `cases.py` / `suites.py` | Load `BenchmarkCase.v0` and suite manifests |
-| `validation.py` | Structural validation + optional `pcs validate` |
-| `runners.py` | Per-case execution paths and command recording |
 | `metrics.py` | Score computation |
-| `reports.py` | `BenchmarkReport.v0` JSON persistence |
-| `report_renderers/` | Markdown, HTML, CSV, JSON human reports |
-| `baselines.py` | Regression comparison |
-| `workspace.py` | Isolated per-run and per-case workspaces |
-| `ci.py` | Threshold enforcement |
+| `reports.py` | `BenchmarkReport.v0` persistence |
+| `packet.py` | Reviewer packet export and verification |
 
 ## Adapter contract
 
-Every external interaction goes through `RepoAdapter.run()`, which returns a `CommandResult` recorded in the benchmark report. pcs-bench never imports internals from sibling repos.
+Every external interaction goes through `RepoAdapter.run()`, which returns a `CommandResult` recorded in the benchmark report. pcs-bench never imports internals from sibling repositories.
 
 ## Workspace layout
 
@@ -82,4 +85,4 @@ Every external interaction goes through `RepoAdapter.run()`, which returns a `Co
     command_history.json
 ```
 
-Source repos are never mutated during a run.
+Source repositories are never mutated during a run.

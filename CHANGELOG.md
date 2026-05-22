@@ -2,7 +2,11 @@
 
 ## 0.3.0 (unreleased)
 
-- Producer contract matrix (`docs/producer-contracts.md`, `producer_contracts.py`)
+- `make release-prep` / `make release-verify` for one-command offline prep and post-live-ci verification
+- Fix producer gate report validation: harness-only fields moved to `producer_gate_result.v0.json` (not `BenchmarkReport.v0` summary)
+- Gate success output lists smoke report and `producer_gate_result.v0.json` when present
+- Consolidated documentation (`docs/release.md`, `docs/producers.md`, `docs/execution.md`)
+- Producer contract matrix (`producer_contracts.py`, documented in `docs/producers.md`)
 - `pcs-bench producer-doctor`, `check-producer-ingests`, `validate-ingest --release-grade`
 - Producer gate aggregation with `producer_merge_manifest.v0.json` and `producer_gate_result.v0.json`
 - Canonical ingest reuse for release-grade gates; `--refresh-producer-ingests`

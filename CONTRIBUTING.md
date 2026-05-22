@@ -16,12 +16,18 @@ make test
 4. Run `pcs-bench validate-cases --suite <alias>`.
 5. Update fixture manifest: `pcs-bench verify-fixtures --write`.
 
+See [Adding a benchmark suite](docs/adding-a-benchmark-suite.md).
+
 ## Pull request checklist
 
 - [ ] `pytest` passes
-- [ ] `pcs-bench run --suite all --simulate --ci` passes
+- [ ] `make gate` passes (offline gate)
 - [ ] No PCS schemas redefined in this repo
-- [ ] Case manifests validate against embedded or pcs-core JSON Schema
+- [ ] Case manifests validate against pcs-core JSON Schema
+
+## Documentation
+
+When changing CLI or gate behavior, update `docs/execution.md`, `docs/producers.md`, or `docs/release.md` as appropriate. Entry point: [docs/README.md](docs/README.md).
 
 ## Commit style
 

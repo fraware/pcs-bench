@@ -623,7 +623,15 @@ def gate_cmd(
             console.print(f"[red]Gate failed at step:[/red] {label}")
             raise typer.Exit(proc.returncode)
 
-    console.print(f"[green]Gate passed[/green] report={out} packet={packet_dir}")
+    msg = f"[green]Gate passed[/green] report={out} packet={packet_dir}"
+    if reproduce_smoke:
+        smoke_path = packet_dir / "packet_reproduction_report.v0.json"
+        if smoke_path.is_file():
+            msg += f" smoke={smoke_path}"
+    gate_result_path = out.parent / "producer_gate_result.v0.json"
+    if gate_result_path.is_file():
+        msg += f" producer_gate={gate_result_path}"
+    console.print(msg)
 
 
 @app.command("validate-producer-fixtures")

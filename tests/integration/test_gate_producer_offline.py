@@ -54,3 +54,19 @@ def test_gate_producer_offline_aggregation(tmp_path: Path) -> None:
     assert gate_result["producers_ingested"] == 4
     assert (packet / "packet_reproduction_report.v0.json").is_file()
     assert (packet / "producer_merge_manifest.v0.json").is_file()
+    smoke = json.loads((packet / "packet_reproduction_report.v0.json").read_text(encoding="utf-8"))
+    assert smoke.get("passed") is True
+
+    from pcs_bench.config import BenchConfig
+    from pcs_bench.validation import validate_report_json
+
+    cfg = BenchConfig.load(cfg_path)
+    schema_root = ROOT / "src" / "pcs_bench"
+    report_errors = validate_report_json(out, cfg, schema_source=schema_root)
+    assert report_errors == [], report_errors
+
+    report_doc = json.loads(out.read_text(encoding="utf-8"))
+    summary = report_doc.get("summary") or {}
+    assert summary.get("evidence_grade") == "developer"
+    assert "fixture_fallback_used" not in summary
+    assert gate_result.get("use_fixture_fallback") is True

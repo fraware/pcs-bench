@@ -47,6 +47,7 @@ only-include = ["src", "benchmarks", "docs", "pcs-bench.yaml", "README.md", "pyp
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 100

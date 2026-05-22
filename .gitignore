@@ -14,6 +14,7 @@ reports/*.md
 reports/*.html
 reports/*.csv
 reports/*-runs/
+reports/.gate-producer-scratch/
 !reports/.gitkeep
 runs/
 packets/

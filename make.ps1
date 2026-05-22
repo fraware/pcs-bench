@@ -35,6 +35,24 @@ switch ($Target) {
     "validate-producer-ingest" {
         Run "$Python scripts/validate_producer_ingest_fixtures.py --pcs-core ../pcs-core"
     }
+    "validate-producer-ingest-release" {
+        Run "$Python scripts/validate_producer_ingest_fixtures.py --pcs-core ../pcs-core --release-grade"
+    }
+    "lint" {
+        Run "$Python -m ruff check src tests"
+    }
+    "release-prep" {
+        & $PSScriptRoot/make.ps1 install
+        & $PSScriptRoot/make.ps1 lint
+        & $PSScriptRoot/make.ps1 schemas
+        & $PSScriptRoot/make.ps1 validate-producer-ingest-release
+        & $PSScriptRoot/make.ps1 test
+        & $PSScriptRoot/make.ps1 gate
+        & $PSScriptRoot/make.ps1 producer-gate
+    }
+    "release-verify" {
+        & $PSScriptRoot/make.ps1 release-check
+    }
     "check-producer-ingests" {
         Run "$PcsBench check-producer-ingests --pcs-core ../pcs-core --labtrust ../LabTrust-Gym --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric --scientific-memory ../scientific-memory"
     }
@@ -76,7 +94,7 @@ switch ($Target) {
     }
     default {
         Write-Host @"
-Targets: install, fixtures, manifest, schemas, test, bench, ci, gate, producer-gate, producer-gate-release, live-ci, release-check, producer-doctor, check-producer-ingests, sync-ingest-fixtures, packet, html
+Targets: install, fixtures, manifest, schemas, lint, test, bench, ci, gate, producer-gate, release-prep, live-ci, release-verify, release-check, producer-doctor, check-producer-ingests, validate-producer-ingest-release, sync-ingest-fixtures, packet, html
 Example: .\make.ps1 gate
 "@
     }

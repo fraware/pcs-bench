@@ -236,17 +236,6 @@
         "hybrid_fallback_cases": {
           "type": "integer",
           "minimum": 0
-        },
-        "fixture_fallback_used": {
-          "type": "boolean"
-        },
-        "producer_reports_merged": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "producer_ingest_errors": {
-          "type": "integer",
-          "minimum": 0
         }
       }
     },

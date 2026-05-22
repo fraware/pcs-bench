@@ -11,7 +11,7 @@ from typing import Any
 from pcs_bench.config import BenchConfig
 from pcs_bench.packet import verify_benchmark_packet
 from pcs_bench.producer_doctor import run_producer_doctor
-from pcs_bench.producer_fixtures import resolve_schema_root, validate_all_producer_fixtures
+from pcs_bench.producer_fixtures import validate_all_producer_fixtures
 from pcs_bench.producer_gate import PRODUCER_BENCHMARKS, _repo_for_producer
 from pcs_bench.ingest_validation import validate_ingest_json
 
@@ -111,12 +111,19 @@ def evaluate_release_readiness(
         )
         summary = json.loads(verify_live_ci.read_text(encoding="utf-8")).get("summary") or {}
         grade = summary.get("evidence_grade")
+        gate_result_path = verify_live_ci.parent / "producer_gate_result.v0.json"
         fallback = summary.get("fixture_fallback_used")
+        if gate_result_path.is_file():
+            try:
+                gate_result = json.loads(gate_result_path.read_text(encoding="utf-8"))
+                fallback = gate_result.get("use_fixture_fallback", fallback)
+            except json.JSONDecodeError:
+                pass
         _append_check(
             result,
             name="live_ci_evidence_grade",
             ok=grade == "release" and not fallback,
-            detail=f"evidence_grade={grade!r} fixture_fallback_used={fallback!r}",
+            detail=f"evidence_grade={grade!r} fixture_fallback={fallback!r}",
         )
     elif verify_live_ci:
         _append_check(

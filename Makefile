@@ -2,7 +2,7 @@
 PYTHON ?= python
 PCS_BENCH = $(PYTHON) -m pcs_bench
 
-.PHONY: install test bench ci gate producer-gate producer-gate-live producer-gate-release live-ci release-check producer-doctor fixtures manifest packet schemas lint clean validate-producer-ingest sync-ingest-fixtures check-producer-ingests check-producer-ingest-fixtures
+.PHONY: install test bench ci gate producer-gate producer-gate-live producer-gate-release live-ci release-check release-prep release-verify producer-doctor fixtures manifest packet schemas lint clean validate-producer-ingest sync-ingest-fixtures check-producer-ingests check-producer-ingest-fixtures
 
 install:
 	$(PYTHON) -m pip install -e ".[dev]"
@@ -92,6 +92,12 @@ live-ci: install schemas
 		--certifyedge ../CertifyEdge \
 		--provability-fabric ../provability-fabric \
 		--scientific-memory ../scientific-memory
+
+# Offline release prep: lint, tests, schemas, fixtures, both gates (no sibling CLIs required).
+release-prep: install lint schemas validate-producer-ingest-release test gate producer-gate
+
+# After live-ci: strict readiness over live artifacts.
+release-verify: release-check
 
 release-check: install
 	$(PCS_BENCH) release-readiness --strict \

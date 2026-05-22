@@ -120,13 +120,8 @@ def _build_pcs_summary(report: BenchmarkReport) -> dict[str, Any]:
         "simulated_cases": int(inner.get("simulated_cases", 0)),
         "hybrid_fallback_cases": int(inner.get("hybrid_fallback_cases", 0)),
     }
-    for passthrough in (
-        "fixture_fallback_used",
-        "producer_reports_merged",
-        "producer_ingest_errors",
-    ):
-        if passthrough in inner:
-            summary[passthrough] = inner[passthrough]
+    # Producer-only diagnostics (fixture_fallback_used, producer_reports_merged, …)
+    # live in producer_gate_result.v0.json, not in BenchmarkReport.v0 summary.
     for key in (
         "release_reproducibility_score",
         "certificate_completeness_score",

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from pcs_bench.config import BenchConfig
-from pcs_bench.packet import export_benchmark_packet, verify_benchmark_packet
+from pcs_bench.packet import export_benchmark_packet
 from pcs_bench.producer_ingest import ProducerMergeEntry, write_producer_merge_manifest
 from pcs_bench.reports import save_report
 from pcs_bench.schemas import BenchmarkReport, BenchmarkRun, MetricSummary

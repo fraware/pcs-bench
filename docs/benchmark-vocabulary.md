@@ -26,7 +26,7 @@ pcs-bench and pcs-core use **two separate status fields** on every benchmark cas
 | `render_failed` | Rendering incomplete or failed |
 | `formal_failed` | Formal / Lean check failed |
 
-Legacy fixtures that used `Admitted` / `Rejected` as `expected_status` are normalized at load time into the split above.
+Older fixtures that used `Admitted` / `Rejected` as `expected_status` are normalized at load time into the split above.
 
 ## BenchmarkReport metrics
 
