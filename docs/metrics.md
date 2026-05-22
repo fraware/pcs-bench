@@ -1,6 +1,6 @@
 # Metrics
 
-pcs-bench computes eight core metrics aligned with pcs-core benchmark schemas. Each metric has an **applicability** state so simulation cannot inflate scores for dimensions the suite does not exercise.
+pcs-bench computes eight core metrics aligned with pcs-core benchmark schemas. Each metric carries an applicability state so scores reflect only the dimensions a suite actually exercises.
 
 ## Applicability states
 
@@ -10,9 +10,9 @@ pcs-bench computes eight core metrics aligned with pcs-core benchmark schemas. E
 | `not_applicable` | Suite declares the metric optional and no cases apply |
 | `insufficient_cases` | No relevant cases in this run (score is `null`) |
 | `skipped` | Explicitly skipped (reserved) |
-| `failed_to_measure` | Suite **requires** the metric but no cases could measure it (CI fails) |
+| `failed_to_measure` | Suite requires the metric yet the run includes no measurable cases (CI fails) |
 
-Exported `BenchmarkReport.v0` JSON lists metric names and structured summaries:
+Exported `BenchmarkReport.v0` JSON lists metric names and structured summaries.
 
 ```json
 {
@@ -38,7 +38,7 @@ Exported `BenchmarkReport.v0` JSON lists metric names and structured summaries:
 }
 ```
 
-See [Benchmark vocabulary](benchmark-vocabulary.md) for the harness vs system outcome split.
+The [Benchmark vocabulary](benchmark-vocabulary.md) explains how harness status differs from system outcome.
 
 ## Core metrics
 
@@ -55,7 +55,7 @@ See [Benchmark vocabulary](benchmark-vocabulary.md) for the harness vs system ou
 
 ## Suite policy
 
-Each `suite.yaml` may declare:
+Each `suite.yaml` may declare required and optional metrics.
 
 ```yaml
 required_metrics:
@@ -65,6 +65,6 @@ optional_metrics:
   - formal_check_coverage_score
 ```
 
-`pcs-bench run --suite all` requires all eight core metrics to be **measured** or explicitly optional per suite policy.
+`pcs-bench run --suite all` expects all eight core metrics to be **measured** or explicitly optional per suite policy.
 
-Thresholds are configured in `pcs-bench.yaml` and enforced in `--ci` mode for **measured** metrics only.
+Thresholds are configured in `pcs-bench.yaml` and enforced in `--ci` mode for **measured** metrics only. See [Configuration](configuration.md).

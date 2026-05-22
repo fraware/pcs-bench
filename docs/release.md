@@ -1,10 +1,10 @@
 # Release guide
 
-Use this guide before tagging a PCS ecosystem release. pcs-bench is the external evaluation gate; each producer repository must emit a valid `pcs_bench_ingest.v0.json` (see [Producer integration](producers.md)).
+This guide supports tagging a PCS ecosystem release. pcs-bench acts as the external evaluation gate, and each producer repository must emit a valid `pcs_bench_ingest.v0.json` as described in [Producer integration](producers.md).
 
 ## Prerequisites
 
-Clone sibling repositories next to pcs-bench (paths are configurable in `pcs-bench.yaml`):
+Clone sibling repositories next to pcs-bench, with paths configurable in [pcs-bench.yaml](configuration.md).
 
 | Repository | Role |
 |------------|------|
@@ -14,7 +14,7 @@ Clone sibling repositories next to pcs-bench (paths are configurable in `pcs-ben
 | [provability-fabric](https://github.com/SentinelOps-CI/provability-fabric) | Admission controller |
 | [scientific-memory](https://github.com/fraware/scientific-memory) | Evidence rendering |
 
-Each producer must implement `make pcs-bench-producer` and write ingest to the path listed in [producers.md](producers.md).
+Each producer implements `make pcs-bench-producer` and writes ingest to the path listed in [producers.md](producers.md).
 
 ## Release workflow
 
@@ -29,7 +29,7 @@ cd ../scientific-memory && make pcs-bench-producer
 
 ### 2. Validate pcs-bench
 
-**Offline prep** (no sibling CLIs; run on every PR):
+**Offline prep** runs on every pull request and only needs this repository.
 
 ```bash
 cd pcs-bench
@@ -37,9 +37,9 @@ pip install -e ".[dev]"
 make release-prep
 ```
 
-Runs: lint, schema sync, release-grade fixture validation, pytest, `gate`, `producer-gate`.
+That target runs lint, schema sync, release-grade fixture validation, pytest, `gate`, and `producer-gate`.
 
-**Live release** (sibling repos on disk):
+**Live release** needs sibling repositories on disk.
 
 ```bash
 make check-producer-ingests
@@ -47,11 +47,11 @@ make live-ci
 make release-verify
 ```
 
-Windows: `.\make.ps1 release-prep`, `.\make.ps1 live-ci`, `.\make.ps1 release-verify`.
+On Windows, use `.\make.ps1 release-prep`, `.\make.ps1 live-ci`, and `.\make.ps1 release-verify`.
 
-### 3. One-shot readiness check
+### 3. Readiness check
 
-After `make live-ci`:
+After `make live-ci`, `make release-verify` runs `release-readiness --strict`. You can also run it manually.
 
 ```bash
 pcs-bench release-readiness --strict \
@@ -65,55 +65,59 @@ pcs-bench release-readiness --strict \
   --json-out reports/release-readiness.json
 ```
 
+A successful run prints `PCS release readiness: OK`.
+
 ## Expected artifacts
 
-After `make live-ci`:
+After `make live-ci`, expect the following outputs.
 
 | File or directory | Purpose |
 |-------------------|---------|
-| `reports/live-ci.json` | Combined `BenchmarkReport.v0` with release evidence |
+| `reports/live-ci.json` | Combined `BenchmarkReport.v0` with `evidence_grade: release` |
 | `reports/producer_merge_manifest.v0.json` | Producer provenance and ingest digests |
 | `reports/producer_gate_result.v0.json` | Gate pass or fail summary |
 | `reports/producer-doctor.json` | Optional producer readiness diagnostic |
-| `packets/live-ci/` | Reviewer packet (cases, report, manifests) |
+| `reports/release-readiness.json` | Output from `release-verify` |
+| `packets/live-ci/` | Reviewer packet |
 | `packets/live-ci/packet_reproduction_report.v0.json` | Packet smoke-check results |
 
-Offline gates (`make producer-gate`, `make gate`) label evidence as **developer** in the aggregate report. When reference ingest data is used, see `reports/producer_gate_result.v0.json` (`use_fixture_fallback: true`).
+Offline gates (`make gate`, `make producer-gate`) set `evidence_grade: developer` on the aggregate report. When reference ingest data is used, `reports/producer_gate_result.v0.json` contains `use_fixture_fallback: true`.
 
 ## Release evidence rules
 
-Live release gates (without `--use-producer-fixtures`) require:
+Live release gates that omit `--use-producer-fixtures` require the following.
 
-- Real 40-character `source_commit` (not all zeros)
+- Real 40-character `source_commit` values that use non-zero hex digits
 - Non-empty `commands` in each producer ingest
 - Producer-specific embedded reports populated (runs, coverage, explain quality, failure localization, profile coverage as applicable)
-- `artifact_refs` digests match embedded objects when references are present
-- No `execution_kind=simulate` on benchmark runs
+- `artifact_refs` digests that match embedded objects when references are present
+- Benchmark runs that use live `execution_kind` values
 - Validation against pcs-core schemas
 
-Full per-producer matrix: [producers.md](producers.md).
+Per-producer details appear in [producers.md](producers.md).
 
 ## Continuous integration
 
-| Trigger | What runs |
-|---------|-----------|
-| Pull request | Unit tests + offline producer gate (reference ingest data; no sibling repos required) |
-| Manual workflow | Optional live producer gate with all repositories checked out |
+GitHub Actions workflows live in `.github/workflows/`.
 
-GitHub Actions workflow: **PCS Producer Gate** (`producer-gate.yml`).
+| Workflow | Jobs | Purpose |
+|----------|------|---------|
+| **PCS Benchmark** (`benchmark.yml`) | `lint-and-test`, `simulate-gate`, `producer-offline-gate` | Every push and PR (ruff, pytest, offline gates) |
+| **PCS Producer Gate** (`producer-gate.yml`) | ingest validation, offline gate, optional live gate | Manual dispatch for full producer checkout |
+
+Pull requests run entirely inside this repository. An optional live gate runs when you enable it in the workflow dispatch UI.
 
 ## Diagnostic commands
 
 ```bash
-# Non-blocking producer readiness table + JSON
 pcs-bench producer-doctor --json-out reports/producer-doctor.json \
   --pcs-core ../pcs-core --labtrust ../LabTrust-Gym \
   --certifyedge ../CertifyEdge --provability-fabric ../provability-fabric \
   --scientific-memory ../scientific-memory
 
-# Strict exit if any producer is not ready
-pcs-bench producer-doctor --strict --release-grade --json-out reports/producer-doctor.json
+pcs-bench producer-doctor --strict --release-grade
 
-# Validate a single ingest file
 pcs-bench validate-ingest --input path/to/pcs_bench_ingest.v0.json --release-grade
 ```
+
+`producer-doctor` exits zero by default and exits with code 2 under `--strict` when any producer is unready.

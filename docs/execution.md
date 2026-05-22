@@ -4,47 +4,82 @@
 
 | Mode | Flag | When to use |
 |------|------|-------------|
-| Simulate | `--simulate` (default) | Local development and CI without installing producer CLIs |
+| Simulate | `--simulate` (default) | Development and CI when producer CLIs are absent from the machine |
 | Live | `--live` | Release evaluation against real command-line tools |
-| Hybrid | `--hybrid` | Try live first; fall back to expected outcome files if a CLI is missing |
-| Dry run | `--dry-run` | Plan a run without executing external commands |
+| Hybrid | `--hybrid` | Live first, then expected outcome files when a CLI returns exit 127 |
+| Dry run | `--dry-run` | Plan a run while skipping external command execution |
 
-Reports record `execution_mode` and `evidence_grade`:
+Reports record `execution_mode` and `evidence_grade` in `summary`.
 
-- **release** — `--ci` and `--live` together; used for credible release evidence
-- **developer** — simulate or hybrid; fine for development, not sufficient alone for release
+| `evidence_grade` | Typical run |
+|------------------|-------------|
+| `release` | `--ci` and `--live` together |
+| `developer` | simulate, hybrid, or producer gate with reference ingest data |
 
-Suites marked `live_required_for_release: true` in `suite.yaml` fail CI when run in simulate mode with zero live cases.
+Suites with `live_required_for_release: true` in `suite.yaml` fail CI when run in simulate mode with zero live cases.
+
+Configuration is documented in [configuration.md](configuration.md).
+
+## Make targets
+
+| Target | What it runs |
+|--------|----------------|
+| `release-prep` | `lint`, `schemas`, `validate-producer-ingest-release`, `pytest`, `gate`, `producer-gate` |
+| `gate` | Offline gate producing `reports/ci.json` and `packets/latest` |
+| `producer-gate` | Offline gate with four producer ingests (reference data allowed) |
+| `live-ci` | `producer-doctor`, `check-producer-ingests --release-grade`, live `gate` with producers |
+| `release-verify` | `release-readiness --strict` over `live-ci` artifacts |
+| `ci` | `gate` plus Markdown and HTML reports |
+
+On Windows, run `.\make.ps1 <target>`.
 
 ## Standard offline gate
 
-Runs without sibling repositories:
+This path only requires the pcs-bench repository.
 
 ```bash
 make gate
-# equivalent:
+```
+
+Equivalent invocation.
+
+```bash
 pcs-bench gate --out reports/ci.json --out-packet packets/latest --reproduce-smoke
 ```
 
-Steps: materialize fixtures, verify fixture manifest, validate cases, validate reference producer ingests, run all suites in simulate mode with CI thresholds, validate report schema, export packet, verify packet (including reproduction smoke).
+Pipeline steps are as follows.
+
+1. Materialize fixtures
+2. Verify fixture manifest
+3. Validate all benchmark cases
+4. Validate reference producer ingests under `tests/fixtures/producer_ingest/`
+5. Run all suites in simulate mode with `--ci` thresholds
+6. Validate `BenchmarkReport.v0`
+7. Export reviewer packet
+8. Verify packet (optional reproduction smoke)
 
 ## Producer offline gate
 
-Includes pcs-bench suites plus four producer ingests (reference data allowed):
+This gate includes harness suites plus four producer `pcs_bench_ingest.v0.json` files, and reference ingest data is permitted.
 
 ```bash
 make producer-gate
 ```
 
-Uses `--run-producer-benchmarks --use-producer-fixtures`. Do not combine `--live` with `--use-producer-fixtures`; the gate rejects that combination.
+The command uses `--run-producer-benchmarks --use-producer-fixtures`. The gate refuses `--live` when combined with `--use-producer-fixtures`.
+
+Harness-only metadata such as `use_fixture_fallback` is written to `reports/producer_gate_result.v0.json` and stays outside the aggregate `BenchmarkReport.v0` summary.
 
 ## Live release gate
 
+This path needs sibling repositories on disk as described in [configuration.md](configuration.md).
+
 ```bash
 make live-ci
+make release-verify
 ```
 
-Runs `producer-doctor`, `check-producer-ingests --release-grade`, then:
+`live-ci` runs the following gate.
 
 ```bash
 pcs-bench gate --suite all --live --run-producer-benchmarks --reproduce-smoke \
@@ -63,7 +98,7 @@ pcs-bench gate --suite all --live --run-producer-benchmarks --reproduce-smoke \
 | 3 | `pcs-bench run --suite computation-reproducibility --live --ci` |
 | 4 | `pcs-bench run --suite all --live --ci` |
 
-Check adapters before live runs:
+Before live runs, confirm adapters respond.
 
 ```bash
 pcs-bench check-adapters --pcs-core ../pcs-core --labtrust ../LabTrust-Gym
@@ -71,16 +106,16 @@ pcs-bench check-adapters --pcs-core ../pcs-core --labtrust ../LabTrust-Gym
 
 ## CI failure conditions
 
-With `--ci`, the run exits non-zero when:
+With `--ci`, the process exits non-zero when any of the following occur.
 
-- A valid release case is rejected (`valid_release_rejected`)
-- An invalid release case is admitted (`invalid_release_not_detected`)
-- A measured metric score is below its threshold in `pcs-bench.yaml`
-- A required metric could not be measured (`failed_to_measure`)
+- A valid release case is rejected
+- An invalid release case is admitted
+- A measured metric falls below its threshold in `pcs-bench.yaml`
+- A required metric remained unmeasured
 - The report fails `BenchmarkReport.v0` validation
-- A live-required suite ran with zero live cases while not in live mode
+- A live-required suite ran with zero live cases while execution stayed in simulate mode
 
-Optional metrics with `insufficient_cases` do not fail CI unless listed under `required_metrics` for that suite.
+Optional metrics with `insufficient_cases` fail CI only when the suite lists them under `required_metrics`.
 
 ## Packets and reproduction smoke
 
@@ -89,18 +124,22 @@ pcs-bench packet --report reports/ci.json --out packets/latest
 pcs-bench verify-packet --packet packets/latest --reproduce-smoke
 ```
 
-Reproduction smoke writes `packet_reproduction_report.v0.json` into the packet directory. It checks that one valid and one invalid case reproduce expected outcomes, that explain-quality JSON validates, and that scientific-memory rendering includes required sections.
+Reproduction smoke writes `packet_reproduction_report.v0.json` in the packet directory and checks the following.
+
+- One valid and one invalid case reproduce expected outcomes
+- Explain-quality JSON validates against schema
+- Scientific-memory rendering includes required sections
+- Bundled producer ingests validate when present
 
 Pass `--reproduce-smoke` to `gate` to run the same checks on the exported packet.
 
-## Recommended local pipeline
+## Recommended local workflow
 
 1. `python scripts/materialize_fixtures.py`
-2. `pcs-bench verify-fixtures --write` (commit `benchmarks/fixture_manifest.json` when changed)
+2. `pcs-bench verify-fixtures --write` (commit `benchmarks/fixture_manifest.json` when it changes)
 3. `pcs-bench validate-cases --suite all --dry-run`
-4. `make gate`
-5. `pytest -q`
-6. When producers are ready: `make live-ci` then `make release-check`
+4. `make release-prep`
+5. When producers are ready, run `make live-ci` and then `make release-verify`
 
 ## Human-readable output
 

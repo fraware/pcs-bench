@@ -1,6 +1,6 @@
 # Producer integration
 
-Each PCS producer repository emits one canonical file: **`pcs_bench_ingest.v0.json`**, validated against schemas in [pcs-core](https://github.com/SentinelOps-CI/pcs-core). pcs-bench ingests these files and merges them with its own benchmark suites into a single `BenchmarkReport.v0`.
+Each PCS producer repository emits one canonical file named **`pcs_bench_ingest.v0.json`**, validated against schemas in [pcs-core](https://github.com/SentinelOps-CI/pcs-core). pcs-bench ingests these files and merges them with its own benchmark suites into a single `BenchmarkReport.v0`.
 
 ## Canonical ingest file
 
@@ -9,10 +9,10 @@ Each PCS producer repository emits one canonical file: **`pcs_bench_ingest.v0.js
 | Filename | `pcs_bench_ingest.v0.json` |
 | Schema | `PcsBenchIngest.v0` (pcs-core) |
 | Embedded data | `benchmark_runs`, `coverage_reports`, `failure_localization_reports`, `explain_quality_reports`, `profile_coverage_reports`, `commands`, `logs`, `source_repo`, `source_commit`, digest |
-| `artifact_refs` | Optional provenance records; they do not replace embedded objects |
+| `artifact_refs` | Optional provenance records that supplement embedded objects |
 | Native target | `make pcs-bench-producer` in each producer repo |
 
-Sync schemas into pcs-bench:
+Sync schemas into pcs-bench with the following command.
 
 ```bash
 pcs-bench sync-schemas --pcs-core ../pcs-core
@@ -31,49 +31,42 @@ pcs-bench sync-schemas --pcs-core ../pcs-core
 
 ### LabTrust-Gym
 
-- **Required in ingest:** `benchmark_runs`, `commands`, `logs`
-- **Release:** non-empty runs, real `source_commit`, live commands, no simulate-only runs
-- **Artifact references:** one ref per `benchmark_runs[].signature_or_digest`
+The ingest must include `benchmark_runs`, `commands`, and `logs`. Release-grade ingests need non-empty runs, a real `source_commit`, live commands, and runs that use live execution kinds. Provide one artifact reference per `benchmark_runs[].signature_or_digest`.
 
 ### CertifyEdge
 
-- **Required in ingest:** `coverage_reports`, `profile_coverage_reports`, `commands`, `logs` (`benchmark_runs` optional when coverage and profile coverage are populated)
-- **Release:** non-empty coverage and profile coverage; real commit
+The ingest must include `coverage_reports`, `profile_coverage_reports`, `commands`, and `logs`. `benchmark_runs` may be empty when coverage and profile coverage are fully populated. Release-grade ingests need non-empty coverage and profile coverage plus a real commit.
 
 ### provability-fabric
 
-- **Required in ingest:** `benchmark_runs`, `failure_localization_reports`, `explain_quality_reports`, `commands`, `logs`
-- **Registry:** `profiles/registry.json` or `registry.json`
-- **Release:** non-empty failure localization and explain-quality reports
+The ingest must include `benchmark_runs`, `failure_localization_reports`, `explain_quality_reports`, `commands`, and `logs`. Registry files live at `profiles/registry.json` or `registry.json`. Release-grade ingests need non-empty failure localization and explain-quality reports.
 
 ### scientific-memory
 
-- **Required in ingest:** `benchmark_runs`, `explain_quality_reports`, `commands`, `logs`
-- **Release:** non-empty explain-quality reports; rendering cases exercised
+The ingest must include `benchmark_runs`, `explain_quality_reports`, `commands`, and `logs`. Release-grade ingests need non-empty explain-quality reports and exercised rendering cases.
 
 ## Release-grade validation
 
-`pcs-bench validate-ingest --release-grade` and live gates (without `--use-producer-fixtures`) require:
+`pcs-bench validate-ingest --release-grade` and live gates that omit `--use-producer-fixtures` apply the checks below.
 
 | Check | Applies to |
 |-------|------------|
-| `source_commit` is 40-character hex, not all zeros | all |
+| `source_commit` is 40-character hex with non-zero digits | all |
 | `benchmark_runs` non-empty | all (CertifyEdge may satisfy via coverage + profile coverage only) |
 | `commands` non-empty | all |
 | `coverage_reports` non-empty | CertifyEdge |
 | `failure_localization_reports` non-empty | provability-fabric |
 | `explain_quality_reports` non-empty | provability-fabric, scientific-memory |
 | `profile_coverage_reports` non-empty | CertifyEdge |
-| No `execution_kind=simulate` on runs | all with runs |
+| Runs use live `execution_kind` | all with runs |
 | `artifact_refs` sidecars exist and digests match | when refs present |
 | pcs-core schema validation | all |
 
-Developer mode (`--use-producer-fixtures`) uses reference ingest files under `tests/fixtures/producer_ingest/` and marks aggregate evidence as **developer**. The gate also writes `producer_gate_result.v0.json` with `use_fixture_fallback: true`. Release gates reject `--live` combined with `--use-producer-fixtures`.
+**Reference ingest mode** (`--use-producer-fixtures`) reads files under `tests/fixtures/producer_ingest/` and sets aggregate `evidence_grade` to `developer`. The gate writes `producer_gate_result.v0.json` with `use_fixture_fallback: true`. Release gates refuse `--live` when combined with `--use-producer-fixtures`.
 
 ## CLI commands
 
 ```bash
-# Readiness diagnostic (non-blocking by default)
 pcs-bench producer-doctor \
   --pcs-core ../pcs-core \
   --labtrust ../LabTrust-Gym \
@@ -84,11 +77,9 @@ pcs-bench producer-doctor \
 
 pcs-bench producer-doctor --strict --release-grade
 
-# Validate one ingest
 pcs-bench validate-ingest --input path/to/pcs_bench_ingest.v0.json --pcs-core ../pcs-core
 pcs-bench validate-ingest --input path/to/pcs_bench_ingest.v0.json --release-grade
 
-# Check all producer repos
 pcs-bench check-producer-ingests \
   --pcs-core ../pcs-core \
   --labtrust ../LabTrust-Gym \
@@ -96,11 +87,9 @@ pcs-bench check-producer-ingests \
   --provability-fabric ../provability-fabric \
   --scientific-memory ../scientific-memory
 
-# Reference ingest only (CI-safe)
 pcs-bench check-producer-ingests --fixtures-only --pcs-core ../pcs-core
 pcs-bench validate-producer-fixtures --pcs-core ../pcs-core
 
-# Normalize to BenchmarkReport.v0
 pcs-bench ingest-producer-output \
   --producer certifyedge \
   --input ../CertifyEdge/benchmark_runs/tool_use_safety/pcs_bench_ingest.v0.json \
@@ -109,23 +98,26 @@ pcs-bench ingest-producer-output \
 pcs-bench ingest-all-producers --out-dir reports/producers
 ```
 
+`producer-doctor` exits zero by default and uses exit code 2 under `--strict` when a producer is unready.
+
 ## Gate behavior with producers
 
-With `--run-producer-benchmarks` on `gate`:
+With `--run-producer-benchmarks` on `gate`, the harness follows this sequence.
 
 1. Optionally runs each producer benchmark when the sibling repo is present.
 2. Loads `pcs_bench_ingest.v0.json` from the paths above.
 3. Validates each ingest and normalizes to internal report format.
 4. Merges with pcs-bench suite results and recomputes metrics.
 5. Writes `producer_merge_manifest.v0.json` beside the aggregate report.
+6. Writes `producer_gate_result.v0.json` with pass or fail status and harness metadata.
 
-Release-grade gates reuse a valid canonical ingest when already on disk. Re-run producer CLIs only when ingest is missing or invalid, or pass `--refresh-producer-ingests` on `gate`.
+Release-grade gates reuse a valid canonical ingest when it already exists on disk. Re-run producer CLIs when ingest is missing or invalid, or pass `--refresh-producer-ingests` on `gate`.
 
-Reference ingest files live in `tests/fixtures/producer_ingest/` and are validated on every `gate` run.
+Reference ingest files under `tests/fixtures/producer_ingest/` are validated on every `gate` run.
 
 ## Merge manifest
 
-`aggregate_gate_report` writes `producer_merge_manifest.v0.json` with producer provenance:
+When producer results are merged, pcs-bench writes `producer_merge_manifest.v0.json`.
 
 ```json
 {
@@ -146,6 +138,8 @@ Reference ingest files live in `tests/fixtures/producer_ingest/` and are validat
 }
 ```
 
-## Implementation reference
+Reviewer packets copy this manifest and per-producer ingest files under `producer_ingests/` when those files exist.
 
-Repo URLs, case search paths, and adapter command names are defined in `src/pcs_bench/producer_contracts.py` for maintainers. User-facing paths and commands above are the stable contract.
+## Maintainer reference
+
+Repo URLs, case search paths, and adapter command names are defined in `src/pcs_bench/producer_contracts.py`. User-facing paths and commands in this document form the stable public contract.

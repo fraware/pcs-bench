@@ -1,21 +1,21 @@
 # Benchmark vocabulary
 
-pcs-bench and pcs-core use **two separate status fields** on every benchmark case. Do not mix harness results with PCS admission outcomes.
+pcs-bench and pcs-core use **two separate status fields** on every benchmark case, and readers should keep harness results separate from PCS admission outcomes.
 
 ## Benchmark harness status
 
-`expected_status` / `BenchmarkRun.observed_status` (schema: `benchmark_observed_status`):
+`expected_status` and `BenchmarkRun.observed_status` use schema type `benchmark_observed_status`.
 
 | Value | Meaning |
 |-------|---------|
 | `passed` | Case expectation met (valid release admitted, or invalid release correctly rejected) |
-| `failed` | Case expectation not met |
-| `skipped` | Case not executed |
+| `failed` | Case expectation unmet |
+| `skipped` | Case omitted from execution |
 | `error` | Harness or adapter error |
 
 ## System outcome
 
-`expected_system_outcome` / `BenchmarkRun.observed_system_outcome` (schema: `benchmark_system_outcome`):
+`expected_system_outcome` and `BenchmarkRun.observed_system_outcome` use schema type `benchmark_system_outcome`.
 
 | Value | Meaning |
 |-------|---------|
@@ -26,20 +26,20 @@ pcs-bench and pcs-core use **two separate status fields** on every benchmark cas
 | `render_failed` | Rendering incomplete or failed |
 | `formal_failed` | Formal / Lean check failed |
 
-Older fixtures that used `Admitted` / `Rejected` as `expected_status` are normalized at load time into the split above.
+Older fixtures that stored `Admitted` or `Rejected` inside `expected_status` are normalized at load time into the split fields above.
 
 ## BenchmarkReport metrics
 
-Exported `BenchmarkReport.v0` JSON uses:
+Exported `BenchmarkReport.v0` JSON uses two parallel structures.
 
-- `metrics`: array of metric **names** (for example `release_reproducibility_score`)
-- `metric_summaries`: scored entries with `name`, `score`, `applicability`, optional `reason`, `numerator`, `denominator`
+- `metrics` holds an array of metric names such as `release_reproducibility_score`
+- `metric_summaries` holds scored entries with `name`, `score`, `applicability`, optional `reason`, `numerator`, and `denominator`
 
 ## Evidence grade
 
 | Field | Values |
 |-------|--------|
 | `summary.execution_mode` | `live`, `simulate`, `hybrid`, `dry_run` |
-| `summary.evidence_grade` | `release` (CI + live only) or `developer` (simulate/hybrid) |
+| `summary.evidence_grade` | `release` (CI + live) or `developer` (simulate/hybrid) |
 
-Release-grade reports require `execution_mode=live`, `live_cases > 0`, and no `hybrid_fallback_cases` for suites marked `live_required_for_release: true` in `suite.yaml`.
+Release-grade reports need `execution_mode=live`, `live_cases > 0`, and zero `hybrid_fallback_cases` for suites marked `live_required_for_release: true` in `suite.yaml`. See [Running benchmarks](execution.md) and [Release guide](release.md).
