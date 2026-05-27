@@ -1,4 +1,15 @@
-# pcs-bench
+<div align="center">
+
+<pre>
+###############################################################################################
+#                    ____   ____ ____        ____                  _                          #
+#                   |  _ \ / ___/ ___|      | __ )  ___ _ __   ___| |__                       #
+#                   | |_) | |   \___ \ _____|  _ \ / _ \ '_ \ / __| '_ \                      #
+#                   |  __/| |___ ___) |_____| |_) |  __/ | | | (__| | | |                     #
+#                   |_|    \____|____/      |____/ \___|_| |_|\___|_| |_|                     #
+#                                                                                             #
+###############################################################################################
+</pre>
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%20|%203.12-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green?style=flat-square)](LICENSE)
@@ -7,6 +18,8 @@
 **Independent benchmarks for Proof-Carrying Science releases.**
 
 pcs-bench runs realistic good-and-bad release scenarios, scores the results, and packages everything reviewers need while certificates, admission, and rendering stay in the ecosystem projects where they belong. Protocol rules live in [pcs-core](https://github.com/SentinelOps-CI/pcs-core), and this repository provides the evaluation harness that ties the ecosystem together.
+
+</div>
 
 ---
 
