@@ -30,12 +30,23 @@ class AcsEffectHost:
         self, manifest: Path, *, epoch: int = 1, legacy_cedar_principal_bridge: bool = False
     ) -> None:
         from agent_control_spec import AcsInterceptor
-        from agent_hooks import EnforcementMode, InterceptionEmitter
+        from agent_hooks import AgentContextBuilder, EnforcementMode, InterceptionEmitter
 
         if epoch < 0:
             raise ValueError("epoch must be nonnegative")
         self._manifest = manifest.resolve(strict=True)
         self._manifest_sha256 = hashlib.sha256(self._manifest.read_bytes()).hexdigest()
+        # Both manifest and external policy bytes define the active program.
+        self._cedar_sha256 = hashlib.sha256(
+            (self._manifest.parent / "effect_guard.cedar").read_bytes()
+        ).hexdigest()
+        # Identity and sequence are owned by the host session. In particular,
+        # the caller's action.principal must not become an authenticated agent ID.
+        self._builder = AgentContextBuilder(
+            agent_id="agent-1",
+            framework="pcs-bench-effect-study",
+            session_id="isolated-acs-evaluation",
+        )
         self._emitter = InterceptionEmitter(mode=EnforcementMode.ENFORCE)
         self._emitter.register(AcsInterceptor(str(self._manifest)), "acs-effect-policy")
         self._epoch = epoch
@@ -50,6 +61,10 @@ class AcsEffectHost:
     def manifest_sha256(self) -> str:
         return self._manifest_sha256
 
+    @property
+    def cedar_sha256(self) -> str:
+        return self._cedar_sha256
+
     def change_policy_state(self, *, epoch: int, revoked: bool) -> None:
         """Simulate a new trusted policy-state snapshot for the host."""
         if epoch < self._epoch:
@@ -60,16 +75,11 @@ class AcsEffectHost:
         self._revoked = revoked
 
     async def _evaluate(self, action: Action, *, attempt: str) -> tuple[bool, str]:
-        from agent_hooks import AgentContextBuilder, InterceptionBlocked
+        from agent_hooks import InterceptionBlocked
 
         # The trusted host, not the tool caller, supplies revocation state.
         args = {**action.to_dict(), "policy_revoked": self._revoked}
-        builder = AgentContextBuilder(
-            agent_id=action.principal,
-            framework="pcs-bench-effect-study",
-            session_id="isolated-acs-evaluation",
-        )
-        context = builder.pre_tool_call(
+        context = self._builder.pre_tool_call(
             call_id=f"{action.operation_id}:{attempt}",
             name="commit_disposable_effect",
             args=args,
