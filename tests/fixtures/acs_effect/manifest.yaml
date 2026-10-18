@@ -1,0 +1,18 @@
+agent_control_specification_version: "0.4.0-alpha.1"
+metadata:
+  name: agent-effect-study
+policies:
+  effect_guard:
+    type: cedar
+    policy_path: ./effect_guard.cedar
+intervention_points:
+  pre_tool_call:
+    policy_target: "$.tool_call.args"
+    policy_target_kind: tool_args
+    tool_name_from: "$.tool_call.name"
+    policy:
+      id: effect_guard
+tools:
+  commit_disposable_effect:
+    type: Tool
+    id: commit_disposable_effect
