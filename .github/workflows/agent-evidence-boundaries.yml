@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/acs-issuer-process.md"
+      - "tests/integration/test_acs_issuer_service.py"
+      - "src/pcs_bench/acs_issuer_service.py"
       - "docs/dual-authority-study.md"
       - "tests/integration/test_dual_authority_acs.py"
       - "src/pcs_bench/dual_authority_acs_study.py"
@@ -40,6 +43,9 @@ on:
     branches: [main]
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/acs-issuer-process.md"
+      - "tests/integration/test_acs_issuer_service.py"
+      - "src/pcs_bench/acs_issuer_service.py"
       - "docs/dual-authority-study.md"
       - "tests/integration/test_dual_authority_acs.py"
       - "src/pcs_bench/dual_authority_acs_study.py"
@@ -181,7 +187,9 @@ jobs:
             src/pcs_bench/signed_acs_study.py \
             tests/integration/test_signed_acs_study.py \
             src/pcs_bench/dual_authority_acs_study.py \
-            tests/integration/test_dual_authority_acs.py
+            tests/integration/test_dual_authority_acs.py \
+            src/pcs_bench/acs_issuer_service.py \
+            tests/integration/test_acs_issuer_service.py
 
       - name: Run genuine Cedar authorization against disposable target
         env:
@@ -191,7 +199,8 @@ jobs:
             tests/integration/test_acs_effect_host.py \
             tests/integration/test_acs_guarded_target.py \
             tests/integration/test_signed_acs_study.py \
-            tests/integration/test_dual_authority_acs.py
+            tests/integration/test_dual_authority_acs.py \
+            tests/integration/test_acs_issuer_service.py
 
       - name: Produce source-bound real ACS/Cedar experiment report
         env:
