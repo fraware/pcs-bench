@@ -7,7 +7,7 @@ import platform
 import shutil
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -121,7 +121,7 @@ def export_benchmark_packet(
 
     meta = {
         "packet_version": "v0",
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
         "report_id": report.report_id,
         "digest": report.signature_or_digest,
         "execution_mode": report.summary.get("execution_mode", "unknown"),
@@ -512,7 +512,7 @@ def _reproduction_report_payload(
     return {
         "schema_version": "v0",
         "packet_dir": str(packet_dir.resolve()),
-        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "verified_at": datetime.now(UTC).isoformat(),
         "passed": passed,
         "checks": checks,
     }
