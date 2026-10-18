@@ -97,8 +97,14 @@ class Change:
             raise ValueError("verification flags must be Boolean")
         if self.verified_bridge and self.verified_refutation:
             raise ValueError("a bridge cannot simultaneously refute its proposition")
-        if self.verified_bridge and self.mode is ChangeMode.CONTRADICTED:
-            raise ValueError("cannot bridge an explicit contradiction")
+        if self.verified_bridge and self.mode in {
+            ChangeMode.CONTRADICTED, ChangeMode.REVOKED
+        }:
+            raise ValueError("cannot bridge a contradiction or revocation")
+        if self.verified_refutation and self.mode not in {
+            ChangeMode.CONTRADICTED, ChangeMode.REVOKED
+        }:
+            raise ValueError("refutation requires contradiction or revocation")
 
 
 @dataclass(frozen=True, slots=True)
