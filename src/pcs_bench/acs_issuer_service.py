@@ -21,7 +21,6 @@ import threading
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Any
 from urllib.parse import urlsplit
 
 from cryptography.hazmat.primitives import serialization
@@ -181,7 +180,7 @@ def make_handler(issuer: CedarIssuer) -> type[BaseHTTPRequestHandler]:
                 return
             try:
                 status, response = issuer.evaluate(data)
-            except Exception:
+            except (OSError, RuntimeError, ValueError, TypeError):
                 self.respond(503, {"error": "policy_runtime_unavailable"})
                 return
             self.respond(status, response)
