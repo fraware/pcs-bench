@@ -98,7 +98,7 @@ def validate_case_structure(case_path: Path) -> list[str]:
     errors: list[str] = []
     try:
         case = load_case(case_path)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - preserve boundary error reporting
         return [str(exc)]
 
     required = [
