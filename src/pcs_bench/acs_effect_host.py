@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
 from urllib.error import URLError
 
 from pcs_bench.effect_boundary import Action, DispatchResult, action_digest, post_commit
