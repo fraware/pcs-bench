@@ -150,6 +150,7 @@ def evaluate(case: Case) -> Decision:
         case.proposition in {
             Proposition.HISTORICAL_AUTHORIZATION,
             Proposition.POLICY_DECISION_CORRECTNESS,
+            Proposition.ISSUER_EXECUTION,
         }
         and change.dependency in TEMPORAL_AUTHORITY
         and change.effective_at > case.event_at
