@@ -2,7 +2,7 @@ name: PCS Benchmark
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, fix/pcs-bench-ruff-remediation]
   pull_request:
     branches: [main, master]
   workflow_dispatch:
