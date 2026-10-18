@@ -34,9 +34,9 @@ ROOT = Path(_EXTERNAL).resolve()
 assert (ROOT / "pf-core/validator/pf_core/deciders.py").is_file(), "PF-Core checkout missing"
 sys.path.insert(0, str(ROOT / "pf-core/validator"))
 
-from pf_core.compile import compile_observation  # noqa: E402
-from pf_core.deciders import action_allowed  # noqa: E402
-from pf_core.emitter import build_trace, emit_certificate  # noqa: E402
+from pf_core.compile import compile_observation
+from pf_core.deciders import action_allowed
+from pf_core.emitter import build_trace, emit_certificate
 
 NORMALIZE_PATH = ROOT / "adapters/provability-fabric/mcp_sidecar/normalize.py"
 spec = importlib.util.spec_from_file_location("pinned_pf_core_normalize", NORMALIZE_PATH)
