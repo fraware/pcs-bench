@@ -5,6 +5,9 @@ on:
     paths:
       - "src/pcs_bench/evidence_boundary.py"
       - "docs/authenticated-target-study.md"
+      - "tests/integration/test_signed_acs_study.py"
+      - "src/pcs_bench/signed_acs_study.py"
+      - "docs/authenticated-target-study.md"
       - "tests/integration/test_authenticated_target.py"
       - "src/pcs_bench/authenticated_target.py"
       - "docs/guarded-target-study.md"
@@ -32,6 +35,9 @@ on:
     branches: [main]
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/authenticated-target-study.md"
+      - "tests/integration/test_signed_acs_study.py"
+      - "src/pcs_bench/signed_acs_study.py"
       - "docs/authenticated-target-study.md"
       - "tests/integration/test_authenticated_target.py"
       - "src/pcs_bench/authenticated_target.py"
@@ -149,7 +155,7 @@ jobs:
 
       - name: Install the published ACS native runtime and Agent Hooks SDK
         run: |
-          python -m pip install -e ".[dev]" ruff "agent-control-spec==0.4.0a4"
+          python -m pip install -e ".[dev]" ruff "agent-control-spec==0.4.0a4" "cryptography==46.0.4"
           python -m pip check
 
       - name: Lint ACS host and integration tests
@@ -158,7 +164,9 @@ jobs:
             src/pcs_bench/acs_effect_study.py \
             tests/integration/test_acs_effect_host.py \
             src/pcs_bench/guarded_study.py \
-            tests/integration/test_acs_guarded_target.py
+            tests/integration/test_acs_guarded_target.py \
+            src/pcs_bench/signed_acs_study.py \
+            tests/integration/test_signed_acs_study.py
 
       - name: Run genuine Cedar authorization against disposable target
         env:
@@ -166,7 +174,8 @@ jobs:
         run: |
           python -m pytest -q \
             tests/integration/test_acs_effect_host.py \
-            tests/integration/test_acs_guarded_target.py
+            tests/integration/test_acs_guarded_target.py \
+            tests/integration/test_signed_acs_study.py
 
       - name: Produce source-bound real ACS/Cedar experiment report
         env:
@@ -192,4 +201,17 @@ jobs:
         with:
           name: guarded-acs-target-python-${{ matrix.python-version }}
           path: reports/acs-guarded-target-study.json
+          if-no-files-found: error
+
+      - name: Generate real ACS signed target study report
+        env:
+          ACS_EFFECT_INTEGRATION: "1"
+        run: |
+          python -m pcs_bench.signed_acs_study --out reports/acs-signed-target-study.json
+
+      - name: Upload real ACS signed target evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-acs-target-python-${{ matrix.python-version }}
+          path: reports/acs-signed-target-study.json
           if-no-files-found: error
