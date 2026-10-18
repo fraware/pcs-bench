@@ -19,6 +19,7 @@ if os.environ.get("ACS_EFFECT_INTEGRATION") != "1":
 from agent_control_spec import __version__ as ACS_VERSION
 
 from pcs_bench.acs_effect_host import AcsEffectHost
+from pcs_bench.acs_effect_study import run_acs_study
 from pcs_bench.effect_boundary import Action, post_commit, read_target
 from pcs_bench.effect_study import disposable_target
 
@@ -141,3 +142,21 @@ def test_genuine_acs_denial_does_not_protect_unmediated_target(tmp_path: Path):
 
     with disposable_target(tmp_path / "acs-bypass.sqlite3") as url:
         asyncio.run(scenario(url))
+
+
+def test_machine_readable_cedar_study_uses_actual_target_ledger(tmp_path: Path):
+    with disposable_target(tmp_path / "acs-report.sqlite3") as url:
+        report = asyncio.run(run_acs_study(MANIFEST, url))
+    assert report["status"] == "pass"
+    assert report["case_count"] == 7
+    assert report["upstream"]["version"] == "0.4.0a4"
+    assert report["upstream"]["policy_backend"] == "Cedar"
+    assert report["upstream"]["agent_hooks"] == "ENFORCE"
+    assert report["upstream"]["legacy_alpha4_principal_projection"] is True
+    assert len(report["upstream"]["cedar_policy_sha256"]) == 64
+    assert report["target"]["commits"] == 3
+    assert report["target"]["balances"] == {"account:a": 33}
+    assert all(case["pass"] for case in report["cases"])
+    by_id = {case["case"]: case for case in report["cases"]}
+    assert by_id["ACS-05-commit-response-lost"]["actual_outcome"] == "unknown"
+    assert by_id["ACS-07-unmediated-bypass"]["observed_new_commits"] == 1
