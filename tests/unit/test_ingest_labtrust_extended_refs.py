@@ -11,12 +11,10 @@ from pcs_bench.ingest_validation import (
     validate_ingest_semantics,
 )
 
-
 _FIXTURE_ROOT = Path(__file__).resolve().parents[1] / "fixtures" / "producer_ingest"
 REPRO_FIXTURE = _FIXTURE_ROOT / "labtrust_reproducibility" / "pcs_bench_ingest.v0.json"
 CASE_SUITE_FIXTURE = _FIXTURE_ROOT / "labtrust" / "pcs_bench_ingest.v0.json"
 FIXTURE = REPRO_FIXTURE if REPRO_FIXTURE.is_file() else CASE_SUITE_FIXTURE
-
 
 def test_labtrust_extended_ref_detection() -> None:
     ref = {
@@ -26,14 +24,12 @@ def test_labtrust_extended_ref_detection() -> None:
     }
     assert _is_labtrust_extended_artifact_ref(ref)
 
-
 def test_pcs_core_body_strips_extended_refs() -> None:
     doc = json.loads(FIXTURE.read_text(encoding="utf-8"))
     body = _pcs_core_ingest_body(doc)
     refs = body.get("artifact_refs") or []
     assert refs
     assert all(not _is_labtrust_extended_artifact_ref(r) for r in refs)
-
 
 def test_semantics_allow_labtrust_extended_types() -> None:
     doc = {
