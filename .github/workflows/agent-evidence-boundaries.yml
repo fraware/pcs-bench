@@ -4,6 +4,13 @@ on:
   pull_request:
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/effect-commit-study.md"
+      - "tests/integration/test_effect_study.py"
+      - "tests/integration/test_effect_commit_boundary.py"
+      - "tests/unit/test_effect_boundary.py"
+      - "src/pcs_bench/effect_study.py"
+      - "src/pcs_bench/effect_target.py"
+      - "src/pcs_bench/effect_boundary.py"
       - "tests/unit/test_evidence_boundary.py"
       - "tests/integration/test_pf_core_evidence_boundary.py"
       - "docs/agent-evidence-boundaries.md"
@@ -12,6 +19,13 @@ on:
     branches: [main]
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/effect-commit-study.md"
+      - "tests/integration/test_effect_study.py"
+      - "tests/integration/test_effect_commit_boundary.py"
+      - "tests/unit/test_effect_boundary.py"
+      - "src/pcs_bench/effect_study.py"
+      - "src/pcs_bench/effect_target.py"
+      - "src/pcs_bench/effect_boundary.py"
       - "tests/unit/test_evidence_boundary.py"
       - "tests/integration/test_pf_core_evidence_boundary.py"
       - "docs/agent-evidence-boundaries.md"
@@ -55,7 +69,13 @@ jobs:
         run: |
           ruff check src/pcs_bench/evidence_boundary.py \
             tests/unit/test_evidence_boundary.py \
-            tests/integration/test_pf_core_evidence_boundary.py
+            tests/integration/test_pf_core_evidence_boundary.py \
+            src/pcs_bench/effect_boundary.py \
+            src/pcs_bench/effect_target.py \
+            src/pcs_bench/effect_study.py \
+            tests/unit/test_effect_boundary.py \
+            tests/integration/test_effect_commit_boundary.py \
+            tests/integration/test_effect_study.py
 
       - name: Run positive, negative, and upstream-source probes
         env:
@@ -63,4 +83,19 @@ jobs:
         run: |
           python -m pytest -q \
             tests/unit/test_evidence_boundary.py \
-            tests/integration/test_pf_core_evidence_boundary.py
+            tests/integration/test_pf_core_evidence_boundary.py \
+            tests/unit/test_effect_boundary.py \
+            tests/integration/test_effect_commit_boundary.py \
+            tests/integration/test_effect_study.py
+
+      - name: Generate target-side effect experiment report
+        run: |
+          mkdir -p reports
+          python -m pcs_bench.effect_study --out reports/agent-effect-study.json
+
+      - name: Upload effect study artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-effect-study-python-${{ matrix.python-version }}
+          path: reports/agent-effect-study.json
+          if-no-files-found: error
