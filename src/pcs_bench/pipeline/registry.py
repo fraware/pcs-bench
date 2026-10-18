@@ -6,11 +6,9 @@ import shutil
 from pathlib import Path
 
 from pcs_bench.benchmark_vocabulary import BENCHMARK_FAILED, BENCHMARK_PASSED
-
 from pcs_bench.cases import case_input_dir
 from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.pipeline.stages import (
-    StageFn,
     _all_cli_missing,
     responsible_repo,
     stage_apply_simulation,
@@ -27,6 +25,7 @@ from pcs_bench.pipeline.stages import (
     stage_verify_release_chain_pf,
     stage_verify_runtime,
     stage_verify_science_claim,
+    StageFn,
 )
 from pcs_bench.schemas import BenchmarkCase, BenchmarkRun, CommandRecord
 from pcs_bench.schemas.benchmark import BenchmarkSuite
