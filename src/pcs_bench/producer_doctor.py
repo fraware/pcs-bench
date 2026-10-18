@@ -8,11 +8,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from pcs_bench.adapters.base import AdapterStatus
 from pcs_bench.adapters.certifyedge import CertifyEdgeAdapter
 from pcs_bench.adapters.labtrust import LabTrustAdapter
 from pcs_bench.adapters.provability_fabric import ProvabilityFabricAdapter
 from pcs_bench.adapters.scientific_memory import ScientificMemoryAdapter
-from pcs_bench.adapters.base import AdapterStatus
 from pcs_bench.config import BenchConfig
 from pcs_bench.ingest_validation import (
     PRODUCER_EMBEDDED_REF_FIELDS,
@@ -26,10 +26,9 @@ from pcs_bench.producer_contracts import (
     resolve_native_producer_target,
     resolve_pf_registry,
 )
-from pcs_bench.producer_fixtures import fixture_ingest_path
 from pcs_bench.producer_contracts import rel_path_under_repo
+from pcs_bench.producer_fixtures import fixture_ingest_path
 from pcs_bench.producer_gate import resolve_benchmark_output_dir, resolve_canonical_ingest_path
-
 
 @dataclass
 class DoctorCheck:
