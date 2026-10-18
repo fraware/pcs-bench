@@ -113,3 +113,17 @@ only after its metric semantics and applicability are independently reviewed.
 A single scalar security score would conceal the distinction between correct
 denials, good effects, ambiguously observed effects, and actual unauthorized
 commits.
+
+## Verification snapshot
+
+The dedicated workflow completed successfully on October 18, 2026 for
+`fraware/pcs-bench@74b09fc5f83298cc4794b722e42e8db66dc08ec1`:
+**44 tests passed on Python 3.11 and 44 tests passed on Python 3.12**, with
+Ruff passing on both and machine-readable study reports uploaded as artifacts.
+See [the actual workflow](https://github.com/fraware/pcs-bench/actions/runs/39160693254).
+This is evidence of the experiment implementation working under its declared
+conditions, not evidence of real-world deployment or upstream security.
+
+The general repository-wide PCS Benchmark workflow is independently failing
+on baseline lint/test debt that is not part of this study; the research PR
+is intentionally open and has a HOLD MERGE review gate.
