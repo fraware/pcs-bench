@@ -9,9 +9,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import hashlib
 import json
-import sys
 import tempfile
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -21,10 +19,6 @@ from typing import Any
 from pcs_bench.acs_effect_host import AcsEffectHost
 from pcs_bench.effect_boundary import Action, post_commit, read_target
 from pcs_bench.effect_study import disposable_target
-
-
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 async def run_acs_study(manifest: Path, url: str) -> dict[str, Any]:
