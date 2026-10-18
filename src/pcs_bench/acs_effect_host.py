@@ -88,8 +88,8 @@ class AcsEffectHost:
             return False, str(blocked.result.verdict.reason or "blocked_by_acs")
         # A transformed request must be used by the host. This experiment
         # uses an allow/deny-only policy and rejects unexpected rewrites.
-        if outcome.verdict.decision.value != "allow":
-            return False, f"unsupported_verdict:{outcome.verdict.decision.value}"
+        if outcome.record.verdict.decision.value != "allow":
+            return False, f"unsupported_verdict:{outcome.record.verdict.decision.value}"
         if outcome.target != args:
             return False, "unexpected_transformation"
         return True, "acs_allow"
