@@ -154,6 +154,14 @@ Producer repositories publish a standard ingest file (`pcs_bench_ingest.v0.json`
 
 ---
 
+## Agent evidence boundary conformance (experimental)
+
+An independent, pinned-source research harness compares principal/capability claims, resource patterns, read/write footprints, and certificate claim classes against separately supplied evidence. Results are **consistent**, **contradicted**, or **insufficient**; they are diagnostic and do not authorize execution or certify a deployment.
+
+See [the methodology, upstream pin, reproducibility commands, and limitations](docs/agent-evidence-boundaries.md). The dedicated CI workflow exercises actual PF-Core reference adapter code under Python 3.11 and 3.12.
+
+---
+
 ## Contribute
 
 We welcome issues, documentation improvements, new benchmark cases, and CI hardening, and you can make meaningful contributions with only this repository cloned locally.
