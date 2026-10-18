@@ -330,3 +330,24 @@ def test_duplicate_key_registration_fails_without_replacement(target):
         register_key(target[1], key_id="alice-1", principal="intruder",
                      tenant="tenant-a", public_key=b"\x01" * 32)
     assert signed(target, "/commit", action().to_dict())[1]["status"] == "committed"
+
+
+def test_second_key_cannot_reuse_existing_stage_by_same_principal(target):
+    receipt = stage(target, action())
+    url, database, _, aud = target
+    second = Ed25519PrivateKey.generate()
+    register_key(
+        database, key_id="alice-2", principal="agent-1", tenant="tenant-a",
+        public_key=second.public_key().public_bytes(
+            encoding=serialization.Encoding.Raw,
+            format=serialization.PublicFormat.Raw,
+        ),
+    )
+    envelope = sign_request(
+        second, key_id="alice-2", audience_id=aud,
+        route="/stage", body=action().to_dict(),
+    )
+    code, result = send(url, "/stage", envelope)
+    assert (code, result["error"]) == (403, "stage_signer_mismatch")
+    assert finish(target, receipt)[1]["status"] == "committed"
+    assert len(journal(target)) == 1
