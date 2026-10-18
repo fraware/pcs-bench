@@ -9,6 +9,7 @@ from pcs_bench.report_export import (
 )
 from pcs_bench.schemas import BenchmarkReport, MetricSummary
 
+
 def _pcs_core() -> Path:
     root = Path(__file__).resolve().parents[2]
     candidate = root.parent / "pcs-core"
@@ -16,8 +17,10 @@ def _pcs_core() -> Path:
         return candidate
     return root / "src" / "pcs_bench"
 
+
 def test_metrics_contract_is_array():
     assert metrics_contract(_pcs_core()) == "metrics_array"
+
 
 def test_export_metrics_never_uses_object():
     report = BenchmarkReport(
@@ -29,6 +32,7 @@ def test_export_metrics_never_uses_object():
     assert isinstance(block["metrics"], list)
     assert "failure_localization_accuracy" in block["metrics"]
     assert isinstance(block["metric_summaries"], list)
+
 
 def test_to_benchmark_report_v0_dict_rejects_legacy_metrics_object_shape():
     report = BenchmarkReport(
