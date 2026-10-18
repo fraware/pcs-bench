@@ -176,3 +176,13 @@ def test_no_result_proves_underlying_historical_truth():
     result = evaluate(c)
     assert set(result.__dataclass_fields__) == {"transport", "reason"}
     assert result.transport is Transport.PRESERVE
+
+
+def test_issuer_execution_does_not_get_retroactively_negated_by_later_key_revocation():
+    base = Case(
+        "issuer-history", Proposition.ISSUER_EXECUTION, 100, 150,
+        Change(Dependency.ISSUER_KEY, ChangeMode.REVOKED, 130),
+    )
+    assert evaluate(base).transport is Transport.PRESERVE
+    earlier = replace(base, change=replace(base.change, effective_at=90))
+    assert evaluate(earlier).transport is Transport.REAPPRAISE
