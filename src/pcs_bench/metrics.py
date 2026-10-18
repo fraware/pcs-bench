@@ -14,12 +14,12 @@ from pcs_bench.metrics_definitions import (
 from pcs_bench.schemas import BenchmarkRun, MetricSummary
 
 __all__ = [
-    "CERTIFICATE_REQUIRED_FIELDS",
-    "REQUIRED_MEMORY_SECTIONS",
-    "compute_all_metrics",
-    "apply_metrics_to_report",
-    "METRIC_COMPUTERS",
     "ALL_METRIC_NAMES",
+    "apply_metrics_to_report",
+    "CERTIFICATE_REQUIRED_FIELDS",
+    "compute_all_metrics",
+    "METRIC_COMPUTERS",
+    "REQUIRED_MEMORY_SECTIONS",
 ]
 
 ALL_METRIC_NAMES = [
