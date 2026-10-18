@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -236,7 +236,7 @@ def _export_run_record(
     bench_status = benchmark_status_for_run(run.passed)
     if bench_status not in ("passed", "failed", "skipped", "error"):
         bench_status = "passed" if run.passed else "failed"
-    started = datetime.now(timezone.utc).isoformat()
+    started = datetime.now(UTC).isoformat()
     system_outcome = run.observed_system_outcome or ""
     if system_outcome in ("admitted", "rejected"):
         admission = system_outcome
