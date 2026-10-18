@@ -4,6 +4,10 @@ on:
   pull_request:
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "tests/fixtures/acs_effect/effect_guard.cedar"
+      - "tests/fixtures/acs_effect/manifest.yaml"
+      - "tests/integration/test_acs_effect_host.py"
+      - "src/pcs_bench/acs_effect_host.py"
       - "docs/effect-commit-study.md"
       - "tests/integration/test_effect_study.py"
       - "tests/integration/test_effect_commit_boundary.py"
@@ -19,6 +23,10 @@ on:
     branches: [main]
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "tests/fixtures/acs_effect/effect_guard.cedar"
+      - "tests/fixtures/acs_effect/manifest.yaml"
+      - "tests/integration/test_acs_effect_host.py"
+      - "src/pcs_bench/acs_effect_host.py"
       - "docs/effect-commit-study.md"
       - "tests/integration/test_effect_study.py"
       - "tests/integration/test_effect_commit_boundary.py"
@@ -99,3 +107,33 @@ jobs:
           name: agent-effect-study-python-${{ matrix.python-version }}
           path: reports/agent-effect-study.json
           if-no-files-found: error
+
+  acs-cedar-effect-integration:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout benchmark source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the published ACS native runtime and Agent Hooks SDK
+        run: |
+          python -m pip install -e ".[dev]" ruff "agent-control-spec==0.4.0a4"
+          python -m pip check
+
+      - name: Lint ACS host and integration tests
+        run: |
+          ruff check src/pcs_bench/acs_effect_host.py \
+            tests/integration/test_acs_effect_host.py
+
+      - name: Run genuine Cedar authorization against disposable target
+        env:
+          ACS_EFFECT_INTEGRATION: "1"
+        run: python -m pytest -q tests/integration/test_acs_effect_host.py
