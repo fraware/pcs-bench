@@ -96,7 +96,7 @@ def check(
 ) -> Appraisal:
     c = c or claim()
     t = t or trust()
-    return appraise(c, t, now=120, verifiers=verifiers or all_checkers(t))
+    return appraise(c, t, now=120, verifiers=all_checkers(t) if verifiers is None else verifiers)
 
 
 def test_five_distinct_trusted_checks_establish_reference_acceptance():
