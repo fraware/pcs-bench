@@ -158,7 +158,7 @@ Producer repositories publish a standard ingest file (`pcs_bench_ingest.v0.json`
 
 An independent, pinned-source research harness compares principal/capability claims, resource patterns, read/write footprints, and certificate claim classes against separately supplied evidence. Results are **consistent**, **contradicted**, or **insufficient**; they are diagnostic and do not authorize execution or certify a deployment.
 
-See [the methodology, upstream pin, reproducibility commands, and limitations](docs/agent-evidence-boundaries.md). The dedicated CI workflow exercises actual PF-Core reference adapter code under Python 3.11 and 3.12.
+See [the pinned-source conformance methodology](docs/agent-evidence-boundaries.md) and [the executable effect-commit study](docs/effect-commit-study.md). The dedicated CI workflow exercises the PF-Core reference adapter, a separate SQLite-backed local effect target, adversarial retry/authorization cases, and two Python versions. It uploads machine-readable experiment reports; these are diagnostic, not deployment certifications.
 
 ---
 
