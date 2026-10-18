@@ -84,6 +84,11 @@ def send(url: str, route: str, envelope: object) -> tuple[int, dict[str, Any]]:
         return error.code, json.loads(error.read(32768))
 
 
+def read_auth_journal(url: str) -> list[dict[str, Any]]:
+    with urlopen(url + "/auth-journal", timeout=5) as response:
+        return json.load(response)["commits"]
+
+
 async def run_study(
     manifest: Path, url: str, database: Path, signer: Ed25519PrivateKey, aud: str,
 ) -> dict[str, Any]:
@@ -221,8 +226,7 @@ async def run_study(
     record("ACSS-10-key-revocation-before-commit", before, code, reply,
            403, "key_revoked", 0)
 
-    with urlopen(url + "/auth-journal", timeout=5) as response:
-        auth_journal = json.load(response)["commits"]
+    auth_journal = await asyncio.to_thread(read_auth_journal, url)
     return {
         "protocol": "acs-signed-target-v1",
         "created_at": datetime.now(UTC).isoformat(),
