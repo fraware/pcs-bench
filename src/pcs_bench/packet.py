@@ -19,7 +19,6 @@ from pcs_bench.report_renderers.markdown import render_markdown
 from pcs_bench.reports import load_report
 from pcs_bench.schemas import BenchmarkReport
 
-
 PACKET_REQUIRED_FILES = [
     "BenchmarkReport.v0.json",
     "report.md",
