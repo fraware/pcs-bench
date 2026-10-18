@@ -1,0 +1,433 @@
+{
+  "schema": "pcs-temporal-reliance-fixtures-v1",
+  "curation": "author-labeled; pending independent semantic review",
+  "semantics": "prior positive reliance under one trusted changed dependency; NOT historical truth or evidence verification",
+  "cases": [
+    {
+      "id": "T001",
+      "proposition": "historical_occurrence",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "actor_key",
+        "mode": "revoked",
+        "effective_at": 130
+      },
+      "expected": "preserve",
+      "rationale": "Future actor authority has no dependency in historical occurrence"
+    },
+    {
+      "id": "T002",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "actor_key",
+        "mode": "revoked",
+        "effective_at": 130
+      },
+      "expected": "preserve",
+      "rationale": "Post-event key revocation alone does not negate historical authorization"
+    },
+    {
+      "id": "T003",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "actor_key",
+        "mode": "revoked",
+        "effective_at": 130,
+        "verified_refutation": true
+      },
+      "expected": "withdraw",
+      "rationale": "Confirmed current key invalidity withdraws prior current authorization"
+    },
+    {
+      "id": "T004",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "actor_key",
+        "mode": "updated",
+        "effective_at": 80
+      },
+      "expected": "reappraise",
+      "rationale": "New pre-event key information requires historical authority appraisal"
+    },
+    {
+      "id": "T005",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "actor_key",
+        "mode": "contradicted",
+        "effective_at": 80,
+        "verified_refutation": true
+      },
+      "expected": "withdraw",
+      "rationale": "Trusted pre-event contradiction withdraws reliance"
+    },
+    {
+      "id": "T006",
+      "proposition": "historical_occurrence",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "effect_observation",
+        "mode": "updated",
+        "effective_at": 130
+      },
+      "expected": "reappraise",
+      "rationale": "Altered observation source requires renewed effect evidence"
+    },
+    {
+      "id": "T007",
+      "proposition": "historical_occurrence",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "effect_observation",
+        "mode": "contradicted",
+        "effective_at": 130,
+        "verified_refutation": true
+      },
+      "expected": "withdraw",
+      "rationale": "Trusted contradictory effect observation withdraws earlier positive reliance"
+    },
+    {
+      "id": "T008",
+      "proposition": "historical_occurrence",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "updated",
+        "effective_at": 80
+      },
+      "expected": "preserve",
+      "rationale": "Policy is not a dependency of a historical occurrence proposition"
+    },
+    {
+      "id": "T009",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "updated",
+        "effective_at": 80
+      },
+      "expected": "reappraise",
+      "rationale": "Pre-event policy change affects historical authorization evidence"
+    },
+    {
+      "id": "T010",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "updated",
+        "effective_at": 130
+      },
+      "expected": "preserve",
+      "rationale": "Post-event policy update does not retroactively alter prior policy"
+    },
+    {
+      "id": "T011",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "updated",
+        "effective_at": 130
+      },
+      "expected": "reappraise",
+      "rationale": "Present authorization relies on current policy"
+    },
+    {
+      "id": "T012",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "contradicted",
+        "effective_at": 130,
+        "verified_refutation": true
+      },
+      "expected": "withdraw",
+      "rationale": "Trusted current policy denial invalidates prior positive reliance"
+    },
+    {
+      "id": "T013",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "updated",
+        "effective_at": 130,
+        "verified_bridge": true
+      },
+      "expected": "preserve",
+      "rationale": "Verified bridge preserves the relevant authorization predicate"
+    },
+    {
+      "id": "T014",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "verifier",
+        "mode": "updated",
+        "effective_at": 125
+      },
+      "expected": "reappraise",
+      "rationale": "Changed verifier version requires reappraisal"
+    },
+    {
+      "id": "T015",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "verifier",
+        "mode": "updated",
+        "effective_at": 125,
+        "verified_bridge": true
+      },
+      "expected": "preserve",
+      "rationale": "Independent verifier-equivalence bridge justifies reuse"
+    },
+    {
+      "id": "T016",
+      "proposition": "historical_occurrence",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "verifier",
+        "mode": "updated",
+        "effective_at": 125
+      },
+      "expected": "reappraise",
+      "rationale": "Changed effect verifier affects current evidentiary reliance"
+    },
+    {
+      "id": "T017",
+      "proposition": "historical_occurrence",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "verifier",
+        "mode": "unavailable",
+        "effective_at": 125
+      },
+      "expected": "reappraise",
+      "rationale": "Unavailable effect verifier does not prove event never happened"
+    },
+    {
+      "id": "T018",
+      "proposition": "issuer_execution",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "execution_witness",
+        "mode": "updated",
+        "effective_at": 125
+      },
+      "expected": "reappraise",
+      "rationale": "Changed execution witness requires independent reappraisal"
+    },
+    {
+      "id": "T019",
+      "proposition": "issuer_execution",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "execution_witness",
+        "mode": "contradicted",
+        "effective_at": 125,
+        "verified_refutation": true
+      },
+      "expected": "withdraw",
+      "rationale": "Independent refutation of issuer execution withdraws reliance"
+    },
+    {
+      "id": "T020",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "execution_witness",
+        "mode": "updated",
+        "effective_at": 125
+      },
+      "expected": "reappraise",
+      "rationale": "Historical authorization relies on issuer execution evidence"
+    },
+    {
+      "id": "T021",
+      "proposition": "policy_decision_correctness",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "updated",
+        "effective_at": 130
+      },
+      "expected": "preserve",
+      "rationale": "Fixed historical policy-decision proposition is not changed by new policy"
+    },
+    {
+      "id": "T022",
+      "proposition": "policy_decision_correctness",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "updated",
+        "effective_at": 80
+      },
+      "expected": "reappraise",
+      "rationale": "Correctness of prior decision depends on policy applicable at event"
+    },
+    {
+      "id": "T023",
+      "proposition": "policy_decision_correctness",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "action_input",
+        "mode": "updated",
+        "effective_at": 125
+      },
+      "expected": "reappraise",
+      "rationale": "Changed evaluation inputs invalidate direct result reuse"
+    },
+    {
+      "id": "T024",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "actor_key",
+        "mode": "revoked",
+        "effective_at": 170
+      },
+      "expected": "preserve",
+      "rationale": "Future-effective revocation is not yet operative at appraisal"
+    },
+    {
+      "id": "T025",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "issuer_key",
+        "mode": "revoked",
+        "effective_at": 130
+      },
+      "expected": "preserve",
+      "rationale": "Later issuer key revocation alone cannot refute historical authorization"
+    },
+    {
+      "id": "T026",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "issuer_key",
+        "mode": "contradicted",
+        "effective_at": 90,
+        "verified_refutation": true
+      },
+      "expected": "withdraw",
+      "rationale": "Trusted pre-event issuer authority contradiction withdraws reliance"
+    },
+    {
+      "id": "T027",
+      "proposition": "historical_occurrence",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "target",
+        "mode": "updated",
+        "effective_at": 130
+      },
+      "expected": "reappraise",
+      "rationale": "Changed target identification affects occurrence evidence"
+    },
+    {
+      "id": "T028",
+      "proposition": "historical_occurrence",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "effect_observation",
+        "mode": "updated",
+        "effective_at": 130,
+        "verified_bridge": true
+      },
+      "expected": "preserve",
+      "rationale": "Verified observation bridge preserves historical occurrence evidence"
+    },
+    {
+      "id": "T029",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "actor_key",
+        "mode": "unavailable",
+        "effective_at": 120
+      },
+      "expected": "reappraise",
+      "rationale": "Unavailability is uncertainty, not a definitive key refutation"
+    },
+    {
+      "id": "T030",
+      "proposition": "issuer_execution",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "policy",
+        "mode": "updated",
+        "effective_at": 110
+      },
+      "expected": "preserve",
+      "rationale": "Issuer execution is distinct from decision correctness for a given policy"
+    },
+    {
+      "id": "T031",
+      "proposition": "current_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "target",
+        "mode": "contradicted",
+        "effective_at": 130,
+        "verified_refutation": true
+      },
+      "expected": "withdraw",
+      "rationale": "Trusted target binding contradiction withdraws current authorization"
+    },
+    {
+      "id": "T032",
+      "proposition": "historical_authorization",
+      "event_at": 100,
+      "appraisal_at": 150,
+      "change": {
+        "dependency": "verifier",
+        "mode": "updated",
+        "effective_at": 130
+      },
+      "expected": "reappraise",
+      "rationale": "New verifier affects evidentiary reliance on past authorization"
+    }
+  ]
+}
