@@ -18,9 +18,7 @@ import binascii
 import json
 import re
 import secrets
-import sqlite3
 import time
-from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -36,9 +34,9 @@ from pcs_bench.guarded_target import (
     allowed,
     db_connect,
     decode_action,
-    initialize as initialize_guarded,
     snapshot,
 )
+from pcs_bench.guarded_target import initialize as initialize_guarded
 
 VERSION = "pcs-bench-ed25519-target-v1"
 DOMAIN = b"pcs-bench-ed25519-target-v1\x00"
