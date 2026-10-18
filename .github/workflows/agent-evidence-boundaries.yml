@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/authenticated-target-study.md"
+      - "tests/integration/test_authenticated_target.py"
+      - "src/pcs_bench/authenticated_target.py"
       - "docs/guarded-target-study.md"
       - "tests/integration/test_acs_guarded_target.py"
       - "tests/integration/test_guarded_effect_target.py"
@@ -29,6 +32,9 @@ on:
     branches: [main]
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/authenticated-target-study.md"
+      - "tests/integration/test_authenticated_target.py"
+      - "src/pcs_bench/authenticated_target.py"
       - "docs/guarded-target-study.md"
       - "tests/integration/test_acs_guarded_target.py"
       - "tests/integration/test_guarded_effect_target.py"
@@ -83,7 +89,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install benchmark and test dependencies
-        run: python -m pip install -e ".[dev]" ruff
+        run: python -m pip install -e ".[dev]" ruff "cryptography==46.0.4"
 
       - name: Lint conformance sources
         run: |
@@ -97,7 +103,9 @@ jobs:
             tests/integration/test_effect_commit_boundary.py \
             tests/integration/test_effect_study.py \
             src/pcs_bench/guarded_target.py \
-            tests/integration/test_guarded_effect_target.py
+            tests/integration/test_guarded_effect_target.py \
+            src/pcs_bench/authenticated_target.py \
+            tests/integration/test_authenticated_target.py
 
       - name: Run positive, negative, and upstream-source probes
         env:
@@ -109,7 +117,8 @@ jobs:
             tests/unit/test_effect_boundary.py \
             tests/integration/test_effect_commit_boundary.py \
             tests/integration/test_effect_study.py \
-            tests/integration/test_guarded_effect_target.py
+            tests/integration/test_guarded_effect_target.py \
+            tests/integration/test_authenticated_target.py
 
       - name: Generate target-side effect experiment report
         run: |
