@@ -255,10 +255,14 @@ def main() -> None:
         raise SystemExit("requires ACS fixture from editable checkout")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     host = AcsEffectHost(manifest, epoch=1, legacy_cedar_principal_bridge=True)
-    with tempfile.TemporaryDirectory(prefix="dual-root-acs-") as temp:
-        database = Path(temp) / "target.sqlite3"
-        with laboratory_target(database, host.cedar_sha256) as (url, actor, issuer, aud):
-            result = asyncio.run(run_study(manifest, url, database, actor, issuer, aud))
+    with (
+        tempfile.TemporaryDirectory(prefix="dual-root-acs-") as temp,
+        laboratory_target(Path(temp) / "target.sqlite3", host.cedar_sha256)
+        as (url, actor, issuer, aud),
+    ):
+        result = asyncio.run(
+            run_study(manifest, url, Path(temp) / "target.sqlite3", actor, issuer, aud)
+        )
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"{result['status']}: {result['case_count']} ACS+two-root target cases")
     if result["status"] != "pass":
