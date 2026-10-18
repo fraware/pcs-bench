@@ -62,7 +62,7 @@ DEPENDENCIES: dict[Proposition, frozenset[Dependency]] = {
     }),
     Proposition.ISSUER_EXECUTION: frozenset({
         Dependency.EXECUTION_WITNESS, Dependency.VERIFIER,
-        Dependency.ACTION_INPUT,
+        Dependency.ISSUER_KEY, Dependency.ACTION_INPUT,
     }),
     Proposition.CURRENT_AUTHORIZATION: frozenset({
         Dependency.POLICY, Dependency.ACTOR_KEY, Dependency.ISSUER_KEY,
