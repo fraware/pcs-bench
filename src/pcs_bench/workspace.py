@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pcs_bench.adapters.base import CommandResult
@@ -16,7 +16,7 @@ class RunWorkspace:
     """Per-run isolated workspace under .pcs-bench-workspaces/."""
 
     def __init__(self, root: Path, run_id: str | None = None):
-        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
         self.run_id = run_id or f"run-{ts}"
         self.root = root / self.run_id
         self.repos = self.root / "repos"
