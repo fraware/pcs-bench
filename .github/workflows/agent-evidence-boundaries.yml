@@ -1,0 +1,66 @@
+name: Agent evidence boundary conformance
+
+on:
+  pull_request:
+    paths:
+      - "src/pcs_bench/evidence_boundary.py"
+      - "tests/unit/test_evidence_boundary.py"
+      - "tests/integration/test_pf_core_evidence_boundary.py"
+      - "docs/agent-evidence-boundaries.md"
+      - ".github/workflows/agent-evidence-boundaries.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/pcs_bench/evidence_boundary.py"
+      - "tests/unit/test_evidence_boundary.py"
+      - "tests/integration/test_pf_core_evidence_boundary.py"
+      - "docs/agent-evidence-boundaries.md"
+      - ".github/workflows/agent-evidence-boundaries.yml"
+  workflow_dispatch:
+
+jobs:
+  pinned-source-conformance:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - name: Checkout benchmark source
+        uses: actions/checkout@v4
+
+      - name: Checkout pinned PF-Core source
+        uses: actions/checkout@v4
+        with:
+          repository: SentinelOps-CI/provability-fabric-core
+          ref: b853bea6d79a6c683928031885176efef851aa5a
+          path: external/pf-core
+          persist-credentials: false
+
+      - name: Verify exact upstream commit
+        shell: bash
+        run: |
+          test "$(git -C external/pf-core rev-parse HEAD)" = \
+            "b853bea6d79a6c683928031885176efef851aa5a"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install benchmark and test dependencies
+        run: python -m pip install -e ".[dev]" ruff
+
+      - name: Lint conformance sources
+        run: |
+          ruff check src/pcs_bench/evidence_boundary.py \
+            tests/unit/test_evidence_boundary.py \
+            tests/integration/test_pf_core_evidence_boundary.py
+
+      - name: Run positive, negative, and upstream-source probes
+        env:
+          PF_CORE_REPO: ${{ github.workspace }}/external/pf-core
+        run: |
+          python -m pytest -q \
+            tests/unit/test_evidence_boundary.py \
+            tests/integration/test_pf_core_evidence_boundary.py
