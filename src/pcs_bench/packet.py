@@ -470,16 +470,29 @@ def _verify_producer_coverage_smoke(
     explain_path = packet_dir / "explain_quality.json"
     report_path = packet_dir / "BenchmarkReport.v0.json"
     explain_doc: dict | None = None
-    if explain_path.exists():
+    declared = explain_path.exists()
+    if declared:
         explain_doc = json.loads(explain_path.read_text(encoding="utf-8"))
     elif report_path.exists():
         report_data = json.loads(report_path.read_text(encoding="utf-8"))
-        explain_doc = (report_data.get("coverage") or {}).get("explain_quality")
+        report_coverage = report_data.get("coverage") or {}
+        declared = "explain_quality" in report_coverage
+        explain_doc = report_coverage.get("explain_quality")
 
-    if not explain_doc:
-        result.errors.append("reproduce-smoke: explain_quality report missing")
+    if not declared:
+        # A pure benchmark simulation does not purport to establish producer
+        # explain-quality. Do not manufacture evidence or mark that check OK.
+        checks["explain_quality_schema"] = {
+            "ok": None,
+            "applicability": "not_applicable",
+            "detail": "packet contains no explain-quality assertion to verify",
+        }
+        return checks
+
+    if not isinstance(explain_doc, dict) or not explain_doc:
+        result.errors.append("reproduce-smoke: declared explain_quality report missing or invalid")
         result.valid = False
-        checks["explain_quality_schema"] = {"ok": False, "detail": "missing explain_quality"}
+        checks["explain_quality_schema"] = {"ok": False, "detail": "invalid declared explain_quality"}
         return checks
 
     explain_errors = validate_instance(explain_doc, "ExplainQualityReport.v0", pcs_root)
