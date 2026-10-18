@@ -99,6 +99,11 @@ def send(url: str, route: str, packet: object) -> tuple[int, dict[str, Any]]:
         return error.code, json.loads(error.read(32768))
 
 
+def read_decision_journal(url: str) -> list[dict[str, Any]]:
+    with urlopen(url + "/decision-journal", timeout=5) as response:
+        return json.load(response)["commits"]
+
+
 async def run_study(
     manifest: Path, url: str, database: Path,
     actor: Ed25519PrivateKey, issuer: Ed25519PrivateKey, aud: str,
@@ -218,8 +223,7 @@ async def run_study(
     add("DUAL-08-revoked-policy-signer", before, code, result,
         (403, "actor_or_issuer_revoked", 0))
 
-    with urlopen(url + "/decision-journal", timeout=5) as response:
-        commitments = json.load(response)["commits"]
+    commitments = await asyncio.to_thread(read_decision_journal, url)
     return {
         "protocol": "pcs-two-root-acs-experiment-v1",
         "created_at": datetime.now(UTC).isoformat(),
