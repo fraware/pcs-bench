@@ -179,7 +179,9 @@ jobs:
             src/pcs_bench/guarded_study.py \
             tests/integration/test_acs_guarded_target.py \
             src/pcs_bench/signed_acs_study.py \
-            tests/integration/test_signed_acs_study.py
+            tests/integration/test_signed_acs_study.py \
+            src/pcs_bench/dual_authority_acs_study.py \
+            tests/integration/test_dual_authority_acs.py
 
       - name: Run genuine Cedar authorization against disposable target
         env:
@@ -188,7 +190,8 @@ jobs:
           python -m pytest -q \
             tests/integration/test_acs_effect_host.py \
             tests/integration/test_acs_guarded_target.py \
-            tests/integration/test_signed_acs_study.py
+            tests/integration/test_signed_acs_study.py \
+            tests/integration/test_dual_authority_acs.py
 
       - name: Produce source-bound real ACS/Cedar experiment report
         env:
@@ -227,4 +230,17 @@ jobs:
         with:
           name: signed-acs-target-python-${{ matrix.python-version }}
           path: reports/acs-signed-target-study.json
+          if-no-files-found: error
+
+      - name: Generate two-root ACS decision appraisal report
+        env:
+          ACS_EFFECT_INTEGRATION: "1"
+        run: |
+          python -m pcs_bench.dual_authority_acs_study --out reports/acs-dual-authority-study.json
+
+      - name: Upload two-root ACS authorization evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: dual-authority-acs-python-${{ matrix.python-version }}
+          path: reports/acs-dual-authority-study.json
           if-no-files-found: error
