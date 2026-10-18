@@ -88,9 +88,9 @@ class Change:
 
     def __post_init__(self) -> None:
         if not isinstance(self.dependency, Dependency):
-            raise ValueError("invalid dependency")
+            raise TypeError("invalid dependency")
         if not isinstance(self.mode, ChangeMode):
-            raise ValueError("invalid change mode")
+            raise TypeError("invalid change mode")
         if type(self.effective_at) is not int or self.effective_at < 0:
             raise ValueError("invalid effective time")
         if type(self.verified_bridge) is not bool or type(self.verified_refutation) is not bool:
@@ -119,7 +119,7 @@ class Case:
         if not self.case_id or not self.case_id.replace("-", "").replace("_", "").isalnum():
             raise ValueError("invalid case identifier")
         if not isinstance(self.proposition, Proposition):
-            raise ValueError("invalid proposition")
+            raise TypeError("invalid proposition")
         if type(self.event_at) is not int or type(self.appraisal_at) is not int:
             raise ValueError("timestamps must be integers")
         if self.event_at < 0 or self.event_at > self.appraisal_at:
