@@ -10,6 +10,8 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -20,10 +22,19 @@ from pcs_bench.effect_boundary import Action, action_digest
 MAX_BODY = 8192
 
 
-def db_connect(database: Path) -> sqlite3.Connection:
+@contextmanager
+def db_connect(database: Path) -> Iterator[sqlite3.Connection]:
+    """Return a fresh auto-commit connection, closing it on every path.
+
+    Early returns from an explicit write transaction are rolled back by close.
+    Successful effect/stage/operator mutations call COMMIT themselves.
+    """
     con = sqlite3.connect(database, timeout=10, isolation_level=None)
     con.row_factory = sqlite3.Row
-    return con
+    try:
+        yield con
+    finally:
+        con.close()
 
 
 def initialize(database: Path) -> None:
