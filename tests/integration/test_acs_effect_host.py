@@ -16,11 +16,10 @@ import pytest
 if os.environ.get("ACS_EFFECT_INTEGRATION") != "1":
     pytest.skip("ACS_EFFECT_INTEGRATION not enabled", allow_module_level=True)
 
-from agent_control_spec import __version__ as ACS_VERSION  # noqa: E402
-from pcs_bench.acs_effect_host import AcsEffectHost  # noqa: E402
-from pcs_bench.effect_boundary import Action  # noqa: E402
-from pcs_bench.effect_study import disposable_target  # noqa: E402
-from pcs_bench.effect_boundary import read_target  # noqa: E402
+from agent_control_spec import __version__ as ACS_VERSION
+from pcs_bench.acs_effect_host import AcsEffectHost
+from pcs_bench.effect_boundary import Action, read_target
+from pcs_bench.effect_study import disposable_target
 
 
 MANIFEST = Path(__file__).resolve().parents[1] / "fixtures/acs_effect/manifest.yaml"
