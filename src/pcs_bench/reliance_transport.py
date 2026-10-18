@@ -257,7 +257,7 @@ def appraise(
             continue
         try:
             result = callback(claim, trust)
-        except (ValueError, TypeError, KeyError, LookupError, OSError, RuntimeError):
+        except Exception:  # noqa: BLE001 - fail closed at external verifier boundary
             unknowns.append(f"verifier_error:{check}")
             continue
         if not isinstance(result, CheckResult):
