@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/fraware/pcs-bench/blob/spec/temporal-reliance-v1/benchmarks/temporal_transport/v1/schema.json",
+  "title": "PCS Temporal Reliance Hand-Labeled Reference Cases v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "curation",
+    "semantics",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "pcs-temporal-reliance-fixtures-v1"
+    },
+    "curation": {
+      "type": "string",
+      "minLength": 12
+    },
+    "semantics": {
+      "type": "string",
+      "minLength": 12
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 30,
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "proposition",
+        "event_at",
+        "appraisal_at",
+        "change",
+        "expected",
+        "rationale"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^T[0-9]{3}$"
+        },
+        "proposition": {
+          "enum": [
+            "historical_occurrence",
+            "historical_authorization",
+            "policy_decision_correctness",
+            "issuer_execution",
+            "current_authorization"
+          ]
+        },
+        "event_at": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "appraisal_at": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "change": {
+          "$ref": "#/$defs/change"
+        },
+        "expected": {
+          "enum": [
+            "preserve",
+            "reappraise",
+            "withdraw"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 25
+        }
+      }
+    },
+    "change": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependency",
+        "mode",
+        "effective_at"
+      ],
+      "properties": {
+        "dependency": {
+          "enum": [
+            "policy",
+            "actor_key",
+            "issuer_key",
+            "verifier",
+            "effect_observation",
+            "execution_witness",
+            "target",
+            "action_input"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "updated",
+            "revoked",
+            "unavailable",
+            "contradicted"
+          ]
+        },
+        "effective_at": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verified_bridge": {
+          "type": "boolean"
+        },
+        "verified_refutation": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "not": {
+            "required": [
+              "verified_bridge",
+              "verified_refutation"
+            ],
+            "properties": {
+              "verified_bridge": {
+                "const": true
+              },
+              "verified_refutation": {
+                "const": true
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "verified_bridge"
+            ],
+            "properties": {
+              "verified_bridge": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "updated",
+                  "unavailable"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "verified_refutation"
+            ],
+            "properties": {
+              "verified_refutation": {
+                "const": true
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "mode": {
+                "enum": [
+                  "revoked",
+                  "contradicted"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
