@@ -30,7 +30,9 @@ from agent_control_spec import __version__ as ACS_VERSION
 from pcs_bench.acs_effect_host import AcsEffectHost
 from pcs_bench.authenticated_target import register_key, sign_request
 from pcs_bench.dual_authority_target import (
-    audience, initialize, register_policy_issuer,
+    audience,
+    initialize,
+    register_policy_issuer,
 )
 from pcs_bench.effect_boundary import Action, action_digest, read_target
 from pcs_bench.guarded_target import operator_update
