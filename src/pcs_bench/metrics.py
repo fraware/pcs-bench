@@ -15,11 +15,11 @@ from pcs_bench.schemas import BenchmarkRun, MetricSummary
 
 __all__ = [
     "ALL_METRIC_NAMES",
-    "apply_metrics_to_report",
     "CERTIFICATE_REQUIRED_FIELDS",
-    "compute_all_metrics",
     "METRIC_COMPUTERS",
     "REQUIRED_MEMORY_SECTIONS",
+    "apply_metrics_to_report",
+    "compute_all_metrics",
 ]
 
 ALL_METRIC_NAMES = [
