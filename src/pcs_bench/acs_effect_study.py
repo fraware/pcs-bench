@@ -123,9 +123,11 @@ def main() -> None:
     if not manifest.is_file():
         raise SystemExit("ACS fixtures not found alongside repository checkout")
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="pcs-acs-study-") as temp:
-        with disposable_target(Path(temp) / "target.sqlite3") as url:
-            result = asyncio.run(run_acs_study(manifest, url))
+    with (
+        tempfile.TemporaryDirectory(prefix="pcs-acs-study-") as temp,
+        disposable_target(Path(temp) / "target.sqlite3") as url,
+    ):
+        result = asyncio.run(run_acs_study(manifest, url))
     args.out.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"{result['status']}: {result['case_count']} real ACS Cedar cases -> {args.out}")
     if result["status"] != "pass":
