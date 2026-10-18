@@ -1,0 +1,43 @@
+name: Temporal reliance semantics
+
+on:
+  push:
+    branches: [spec/temporal-reliance-v1]
+    paths:
+      - "src/pcs_bench/temporal_reliance.py"
+      - "tests/unit/test_temporal_reliance.py"
+      - "benchmarks/temporal_transport/v1/**"
+      - "docs/specs/temporal-reliance-v1.md"
+      - ".github/workflows/temporal-reliance.yml"
+  pull_request:
+    paths:
+      - "src/pcs_bench/temporal_reliance.py"
+      - "tests/unit/test_temporal_reliance.py"
+      - "benchmarks/temporal_transport/v1/**"
+      - "docs/specs/temporal-reliance-v1.md"
+      - ".github/workflows/temporal-reliance.yml"
+  workflow_dispatch:
+
+jobs:
+  reference-semantics:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python -m pip install -e ".[dev]" ruff
+          python -m pip check
+      - name: Lint reference model and tests
+        run: |
+          ruff check src/pcs_bench/temporal_reliance.py \
+            tests/unit/test_temporal_reliance.py
+      - name: Evaluate independently authored reference-case labels
+        run: |
+          python -m pytest -q tests/unit/test_temporal_reliance.py
