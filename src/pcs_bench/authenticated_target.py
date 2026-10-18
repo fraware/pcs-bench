@@ -274,6 +274,15 @@ def authenticated_process(
                 "SELECT * FROM staged WHERE operation_id=?", (action.operation_id,)
             ).fetchone()
             if prior is not None:
+                stage_owner = con.execute(
+                    "SELECT key_id FROM auth_stages WHERE operation_id=?",
+                    (action.operation_id,),
+                ).fetchone()
+                if stage_owner is None:
+                    raise RuntimeError("existing stage lacks authenticated owner")
+                if stage_owner["key_id"] != signed["key_id"]:
+                    con.execute("COMMIT")
+                    return 403, {"error": "stage_signer_mismatch"}
                 outcome = (
                     (200, {"status": "staged_existing", "operation_id": action.operation_id,
                            "request_digest": digest, "stage_epoch": prior["stage_epoch"]})
