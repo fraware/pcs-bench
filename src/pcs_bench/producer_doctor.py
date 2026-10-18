@@ -21,14 +21,15 @@ from pcs_bench.ingest_validation import (
 from pcs_bench.producer_contracts import (
     PRODUCER_CONTRACTS,
     ProducerContract,
+    rel_path_under_repo,
     repo_for_contract,
     resolve_first_existing,
     resolve_native_producer_target,
     resolve_pf_registry,
 )
-from pcs_bench.producer_contracts import rel_path_under_repo
 from pcs_bench.producer_fixtures import fixture_ingest_path
 from pcs_bench.producer_gate import resolve_benchmark_output_dir, resolve_canonical_ingest_path
+
 
 @dataclass
 class DoctorCheck:
