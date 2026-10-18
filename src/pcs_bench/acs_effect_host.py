@@ -26,7 +26,9 @@ class AcsAuthorization:
 class AcsEffectHost:
     """Trusted reference host for pinned, real Cedar-backed ACS."""
 
-    def __init__(self, manifest: Path, *, epoch: int = 1) -> None:
+    def __init__(
+        self, manifest: Path, *, epoch: int = 1, legacy_cedar_principal_bridge: bool = False
+    ) -> None:
         from agent_control_spec import AcsInterceptor
         from agent_hooks import EnforcementMode, InterceptionEmitter
 
@@ -38,6 +40,7 @@ class AcsEffectHost:
         self._emitter.register(AcsInterceptor(str(self._manifest)), "acs-effect-policy")
         self._epoch = epoch
         self._revoked = False
+        self._legacy_cedar_principal_bridge = legacy_cedar_principal_bridge
 
     @property
     def epoch(self) -> int:
@@ -71,6 +74,14 @@ class AcsEffectHost:
             name="commit_disposable_effect",
             args=args,
         )
+        if self._legacy_cedar_principal_bridge:
+            # Compatibility ONLY for published ACS 0.4.0a4: the bundled Cedar
+            # dispatcher reads envelope.agent.id, whereas Agent Hooks 0.1
+            # places this identity at agent.id. Upstream fixes this in beta.1.
+            # Copy it from the already constructed host identity, not from
+            # untrusted tool arguments. This is not a normative Agent Hooks
+            # snapshot; remove the bridge when the fixed wheel is published.
+            context["envelope"] = {"agent": {"id": context["agent"]["id"]}}
         try:
             outcome = await self._emitter.emit(context)
         except InterceptionBlocked as blocked:
