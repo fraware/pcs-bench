@@ -48,7 +48,7 @@ A high-assurance real-world evaluator must replace these Boolean inputs with ind
 1. Reject malformed data and contradictory verification assumptions.
 2. If the change becomes effective *after* appraisal, preserve prior reliance for now.
 3. If the changed dependency does not support this proposition, preserve.
-4. For `historical_authorization` or `policy_decision_correctness`, a policy or actor/issuer-key authority change effective **after the referenced event** does not retroactively change the then-applicable authority. Preserve, unless additional evidence establishes a different effective historical fact (which must be represented with the correct earlier effective timestamp).
+4. For `historical_authorization`, `policy_decision_correctness` or `issuer_execution`, a policy or actor/issuer-key authority change effective **after the referenced event** does not retroactively change the then-applicable authority or the historical occurrence of issuer execution. Preserve, unless additional evidence establishes a different effective historical fact (which must be represented with the correct earlier effective timestamp).
 5. If a relevant verified refutation applies, withdraw.
 6. If a relevant independently verified transport bridge applies, preserve.
 7. Otherwise, reappraise.
