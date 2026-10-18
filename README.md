@@ -158,7 +158,7 @@ Producer repositories publish a standard ingest file (`pcs_bench_ingest.v0.json`
 
 An independent, pinned-source research harness compares principal/capability claims, resource patterns, read/write footprints, and certificate claim classes against separately supplied evidence. Results are **consistent**, **contradicted**, or **insufficient**; they are diagnostic and do not authorize execution or certify a deployment.
 
-See [the pinned-source conformance methodology](docs/agent-evidence-boundaries.md) and [the executable effect-commit study](docs/effect-commit-study.md). The dedicated CI workflow exercises the PF-Core reference adapter, a separate SQLite-backed local effect target, adversarial retry/authorization cases, and two Python versions. It uploads machine-readable experiment reports; these are diagnostic, not deployment certifications.
+See [the pinned-source conformance methodology](docs/agent-evidence-boundaries.md), [the disposable effect-commit study](docs/effect-commit-study.md), and [the real ACS/Cedar integration](docs/acs-effect-study.md). Dedicated CI checks the PF-Core source, actual ACS policy verdicts via enforcing Agent Hooks, a separate target-owned SQLite journal, and Python 3.11/3.12. Both studies upload independent machine-readable reports. Results are diagnostic, not deployment certifications.
 
 ---
 
