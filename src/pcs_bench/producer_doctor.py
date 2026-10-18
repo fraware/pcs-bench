@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -265,7 +265,7 @@ def run_producer_doctor(
     schema_root: Path,
     release_grade: bool = False,
 ) -> ProducerDoctorResult:
-    result = ProducerDoctorResult(generated_at=datetime.now(timezone.utc).isoformat())
+    result = ProducerDoctorResult(generated_at=datetime.now(UTC).isoformat())
     for contract in PRODUCER_CONTRACTS:
         result.producers.append(
             diagnose_producer(cfg, contract, schema_root=schema_root, release_grade=release_grade)
