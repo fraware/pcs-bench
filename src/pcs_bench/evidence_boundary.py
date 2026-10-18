@@ -123,13 +123,28 @@ def authority_consistency(
     )
 
 
-def scope_consistency(observation: Mapping[str, Any]) -> BoundaryCheck:
-    """Check a capability's lexical resource pattern; not kernel-level containment."""
+def scope_consistency(
+    observation: Mapping[str, Any],
+    trusted_catalog: Mapping[str, str] | None,
+) -> BoundaryCheck:
+    """Compare with a separately supplied capability catalog before matching URIs."""
     action = _action(observation)
     capability = _mapping(action.get("capability"))
     pattern = capability.get("resource_pattern")
-    if not isinstance(pattern, str) or not pattern:
-        return _check("insufficient", "SCOPE_UNSPECIFIED", "No capability resource pattern")
+    cap_id = capability.get("id")
+    if not isinstance(pattern, str) or not pattern or not isinstance(cap_id, str):
+        return _check("insufficient", "SCOPE_UNSPECIFIED", "No complete capability scope")
+    if trusted_catalog is None:
+        return _check("insufficient", "CAPABILITY_CATALOG_ABSENT", "No independent catalog")
+    trusted_pattern = trusted_catalog.get(cap_id)
+    if not isinstance(trusted_pattern, str) or not trusted_pattern:
+        return _check("insufficient", "CAPABILITY_UNKNOWN", "Capability absent from catalog")
+    if pattern != trusted_pattern:
+        return _check(
+            "contradicted",
+            "CAPABILITY_SCOPE_MISMATCH",
+            "Observed capability pattern disagrees with independent catalog",
+        )
     reads, writes = _resources(action, "reads"), _resources(action, "writes")
     if reads is None or writes is None or not (reads or writes):
         return _check("insufficient", "SCOPE_FOOTPRINT_MISSING", "Resource list absent or empty")
@@ -208,12 +223,13 @@ def assess_evidence_boundary(
     *,
     independent_grant: Mapping[str, Any] | None = None,
     independent_footprint: Mapping[str, Any] | None = None,
+    trusted_catalog: Mapping[str, str] | None = None,
     certificate: Mapping[str, Any] | None = None,
 ) -> BoundaryReport:
     """Produce a diagnostic report. Never treat it as an authorization or attestation."""
     return BoundaryReport(
         authority=authority_consistency(observation, independent_grant),
-        scope=scope_consistency(observation),
+        scope=scope_consistency(observation, trusted_catalog),
         footprint=footprint_consistency(observation, independent_footprint),
         proof=proof_claim_consistency(certificate),
     )
