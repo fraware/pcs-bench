@@ -122,6 +122,8 @@ class CurrentTrust:
             raise ValueError("invalid trusted context identity")
         if type(self.policy_epoch) is not int or self.policy_epoch < 1:
             raise ValueError("invalid trusted policy epoch")
+        if self.actor_key_sha256 == self.issuer_key_sha256:
+            raise ValueError("actor and issuer trust keys must be distinct")
         checks = [s.check for s in self.checkers]
         if len(checks) != len(set(checks)):
             raise ValueError("ambiguous duplicate verifier specification")
