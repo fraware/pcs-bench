@@ -10,8 +10,8 @@ from pcs_bench.cases import case_input_dir
 from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.pipeline.stages import (
     StageFn,
-    StageFn,
-    _all_cli_missing,    responsible_repo,
+    _all_cli_missing,
+    responsible_repo,
     stage_apply_simulation,
     stage_discover_artifacts,
     stage_emit_or_validate_certificate,
