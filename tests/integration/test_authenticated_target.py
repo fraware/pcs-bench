@@ -5,7 +5,6 @@ local SQLite access; the HTTP server only handles signed data-plane requests.
 """
 from __future__ import annotations
 
-import base64
 import json
 import os
 import select
