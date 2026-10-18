@@ -15,6 +15,7 @@ from pcs_bench.producer_doctor import run_producer_doctor
 from pcs_bench.producer_fixtures import validate_all_producer_fixtures
 from pcs_bench.producer_gate import PRODUCER_BENCHMARKS, _repo_for_producer
 
+
 @dataclass
 class ReleaseReadinessResult:
     ready: bool
