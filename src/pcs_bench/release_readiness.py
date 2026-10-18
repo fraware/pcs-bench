@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -25,7 +25,7 @@ class ReleaseReadinessResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": "v0",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "ready": self.ready,
             "checks": self.checks,
             "errors": self.errors,
