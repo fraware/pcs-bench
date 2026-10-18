@@ -1,10 +1,13 @@
 """pcs-bench CLI."""
 
+# ruff: noqa: B008
+# Typer requires typer.Option()/typer.Argument() declaration defaults; these
+# are CLI parameter metadata, not mutable runtime function-call defaults.
+
 from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.console import Console
@@ -20,8 +23,8 @@ from pcs_bench.ci import (
     format_ci_failure,
 )
 from pcs_bench.config import ALL_SUITES, SUITE_ALIASES, BenchConfig
-from pcs_bench.errors import PcsBenchError, ThresholdViolationError
 from pcs_bench.coverage import apply_coverage_to_report
+from pcs_bench.errors import PcsBenchError, ThresholdViolationError
 from pcs_bench.metrics import apply_metrics_to_report, compute_all_metrics
 from pcs_bench.packet import export_benchmark_packet
 from pcs_bench.report_renderers.csv import render_csv
@@ -42,7 +45,7 @@ app = typer.Typer(
 console = Console()
 
 
-def _load_config(config_path: Optional[Path]) -> BenchConfig:
+def _load_config(config_path: Path | None) -> BenchConfig:
     return BenchConfig.load(config_path)
 
 
@@ -90,12 +93,12 @@ def list_suites_cmd() -> None:
 
 @app.command("check-adapters")
 def check_adapters_cmd(
-    config: Optional[Path] = typer.Option(None, "--config"),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
-    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
-    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
-    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
-    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+    config: Path | None = typer.Option(None, "--config"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
+    labtrust: Path | None = typer.Option(None, "--labtrust"),
+    certifyedge: Path | None = typer.Option(None, "--certifyedge"),
+    provability_fabric: Path | None = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Path | None = typer.Option(None, "--scientific-memory"),
 ) -> None:
     """Smoke-check ecosystem repo CLIs."""
     cfg = _load_config(config).apply_cli_overrides(
@@ -129,9 +132,9 @@ def check_adapters_cmd(
 @app.command("run")
 def run_cmd(
     suite: str = typer.Option(..., "--suite", help="Suite alias or 'all'."),
-    config: Optional[Path] = typer.Option(None, "--config", help="Path to pcs-bench.yaml."),
+    config: Path | None = typer.Option(None, "--config", help="Path to pcs-bench.yaml."),
     out: Path = typer.Option(Path("reports/latest.json"), "--out", help="Output report JSON."),
-    workspace: Optional[Path] = typer.Option(None, "--workspace", help="Workspace root override."),
+    workspace: Path | None = typer.Option(None, "--workspace", help="Workspace root override."),
     preserve_workspace: bool = typer.Option(False, "--preserve-workspace"),
     fail_fast: bool = typer.Option(False, "--fail-fast"),
     ci: bool = typer.Option(False, "--ci", help="Fail on threshold violations."),
@@ -148,21 +151,21 @@ def run_cmd(
         "--hybrid",
         help="Try live CLIs first; fall back to fixture simulation when unavailable.",
     ),
-    cases: Optional[str] = typer.Option(
+    cases: str | None = typer.Option(
         None,
         "--cases",
         help="Comma-separated case IDs to run (default: all in suite).",
     ),
-    parallel: Optional[int] = typer.Option(
+    parallel: int | None = typer.Option(
         None,
         "--parallel",
         help="Override parallel case workers (simulate/dry-run only).",
     ),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
-    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
-    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
-    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
-    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
+    labtrust: Path | None = typer.Option(None, "--labtrust"),
+    certifyedge: Path | None = typer.Option(None, "--certifyedge"),
+    provability_fabric: Path | None = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Path | None = typer.Option(None, "--scientific-memory"),
 ) -> None:
     """Run benchmark suite(s)."""
     cfg = _load_config(config).apply_cli_overrides(
@@ -345,7 +348,7 @@ def verify_fixtures_cmd(
         "--manifest",
     ),
     write: bool = typer.Option(False, "--write", help="Regenerate manifest."),
-    config: Optional[Path] = typer.Option(None, "--config"),
+    config: Path | None = typer.Option(None, "--config"),
 ) -> None:
     """Verify or generate benchmark fixture integrity manifest."""
     from pcs_bench.reproducibility import (
@@ -383,9 +386,9 @@ def verify_fixtures_cmd(
 def packet_cmd(
     report_path: Path = typer.Option(..., "--report", help="Benchmark report JSON."),
     out: Path = typer.Option(Path("packets/latest"), "--out", help="Output packet directory."),
-    baseline: Optional[Path] = typer.Option(None, "--baseline"),
-    workspace: Optional[Path] = typer.Option(None, "--workspace", help="Run workspace for logs."),
-    config: Optional[Path] = typer.Option(None, "--config"),
+    baseline: Path | None = typer.Option(None, "--baseline"),
+    workspace: Path | None = typer.Option(None, "--workspace", help="Run workspace for logs."),
+    config: Path | None = typer.Option(None, "--config"),
 ) -> None:
     """Export a self-contained benchmark packet for external reviewers."""
     cfg = _load_config(config)
@@ -402,17 +405,17 @@ def packet_cmd(
 @app.command("validate-report")
 def validate_report_cmd(
     input: Path = typer.Option(..., "--input", help="Benchmark report JSON."),
-    schema_source: Optional[Path] = typer.Option(
+    schema_source: Path | None = typer.Option(
         None,
         "--schema-source",
         help="Path to pcs-core repo for BenchmarkReport.v0 schema.",
     ),
-    pcs_core: Optional[Path] = typer.Option(
+    pcs_core: Path | None = typer.Option(
         None,
         "--pcs-core",
         help="Alias for --schema-source (pcs-core checkout path).",
     ),
-    config: Optional[Path] = typer.Option(None, "--config"),
+    config: Path | None = typer.Option(None, "--config"),
 ) -> None:
     """Validate a report against pcs-core BenchmarkReport.v0."""
     schema_root = pcs_core or schema_source
@@ -451,7 +454,7 @@ def sync_schemas_cmd(
 
 @app.command("gate")
 def gate_cmd(
-    config: Optional[Path] = typer.Option(None, "--config"),
+    config: Path | None = typer.Option(None, "--config"),
     out: Path = typer.Option(Path("reports/ci.json"), "--out"),
     packet_dir: Path = typer.Option(Path("packets/latest"), "--out-packet", "--packet"),
     suite: str = typer.Option("all", "--suite"),
@@ -481,15 +484,15 @@ def gate_cmd(
         "--reproduce-smoke",
         help="Run packet verify with reproduction smoke checks (valid/invalid/explain/rendering).",
     ),
-    pcs_core: Optional[Path] = typer.Option(
+    pcs_core: Path | None = typer.Option(
         None,
         "--pcs-core",
         help="pcs-core checkout for schema validation (overrides pcs-bench.yaml).",
     ),
-    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
-    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
-    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
-    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+    labtrust: Path | None = typer.Option(None, "--labtrust"),
+    certifyedge: Path | None = typer.Option(None, "--certifyedge"),
+    provability_fabric: Path | None = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Path | None = typer.Option(None, "--scientific-memory"),
 ) -> None:
     """Run full release gate: fixtures, manifest, cases, benchmark, report validation, packet."""
     import subprocess
@@ -551,7 +554,7 @@ def gate_cmd(
 
     for cmd, label in steps:
         console.print(f"[bold]gate[/bold] {label}")
-        proc = subprocess.run(cmd, cwd=root)
+        proc = subprocess.run(cmd, cwd=root, check=False)
         if proc.returncode != 0:
             console.print(f"[red]Gate failed at step:[/red] {label}")
             raise typer.Exit(proc.returncode)
@@ -618,7 +621,7 @@ def gate_cmd(
     ]
     for cmd, label in post_steps:
         console.print(f"[bold]gate[/bold] {label}")
-        proc = subprocess.run(cmd, cwd=root)
+        proc = subprocess.run(cmd, cwd=root, check=False)
         if proc.returncode != 0:
             console.print(f"[red]Gate failed at step:[/red] {label}")
             raise typer.Exit(proc.returncode)
@@ -636,13 +639,13 @@ def gate_cmd(
 
 @app.command("validate-producer-fixtures")
 def validate_producer_fixtures_cmd(
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
     release_grade: bool = typer.Option(
         False,
         "--release-grade",
         help="Also require release-grade semantic adequacy on golden fixtures.",
     ),
-    config: Optional[Path] = typer.Option(None, "--config"),
+    config: Path | None = typer.Option(None, "--config"),
 ) -> None:
     """Validate all embedded producer PcsBenchIngest.v0 fixtures."""
     from pcs_bench.producer_fixtures import resolve_schema_root, validate_all_producer_fixtures
@@ -667,7 +670,7 @@ def validate_producer_fixtures_cmd(
 
 @app.command("check-producer-ingests")
 def check_producer_ingests_cmd(
-    config: Optional[Path] = typer.Option(None, "--config"),
+    config: Path | None = typer.Option(None, "--config"),
     fixtures_only: bool = typer.Option(
         False,
         "--fixtures-only",
@@ -678,11 +681,11 @@ def check_producer_ingests_cmd(
         "--release-grade",
         help="Apply release-grade ingest adequacy checks.",
     ),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
-    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
-    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
-    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
-    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
+    labtrust: Path | None = typer.Option(None, "--labtrust"),
+    certifyedge: Path | None = typer.Option(None, "--certifyedge"),
+    provability_fabric: Path | None = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Path | None = typer.Option(None, "--scientific-memory"),
 ) -> None:
     """Report PcsBenchIngest.v0 presence and validation for each producer repo."""
     from pcs_bench.producer_fixtures import (
@@ -768,12 +771,12 @@ def check_producer_ingests_cmd(
 @app.command("ingest-all-producers")
 def ingest_all_producers_cmd(
     out_dir: Path = typer.Option(Path("reports/producers"), "--out-dir"),
-    config: Optional[Path] = typer.Option(None, "--config"),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
-    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
-    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
-    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
-    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+    config: Path | None = typer.Option(None, "--config"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
+    labtrust: Path | None = typer.Option(None, "--labtrust"),
+    certifyedge: Path | None = typer.Option(None, "--certifyedge"),
+    provability_fabric: Path | None = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Path | None = typer.Option(None, "--scientific-memory"),
 ) -> None:
     """Ingest PcsBenchIngest.v0 from all producer repos into normalized reports."""
     from pcs_bench.producer_ingest_all import ingest_all_producers
@@ -798,7 +801,7 @@ def ingest_all_producers_cmd(
 @app.command("validate-ingest")
 def validate_ingest_cmd(
     input: Path = typer.Option(..., "--input", help="PcsBenchIngest.v0 file or benchmark_runs directory."),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
     use_pcs_validate: bool = typer.Option(
         False,
         "--use-pcs-validate",
@@ -809,7 +812,7 @@ def validate_ingest_cmd(
         "--release-grade",
         help="Fail on semantic inadequacy (empty runs, missing producer artifacts, placeholder commits).",
     ),
-    config: Optional[Path] = typer.Option(None, "--config"),
+    config: Path | None = typer.Option(None, "--config"),
 ) -> None:
     """Validate a producer PcsBenchIngest.v0 payload against pcs-core schemas."""
     from pcs_bench.ingest_validation import validate_ingest_developer_warnings, validate_ingest_json
@@ -843,18 +846,18 @@ def validate_ingest_cmd(
 
 @app.command("producer-doctor")
 def producer_doctor_cmd(
-    config: Optional[Path] = typer.Option(None, "--config"),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
-    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
-    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
-    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
-    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
+    config: Path | None = typer.Option(None, "--config"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
+    labtrust: Path | None = typer.Option(None, "--labtrust"),
+    certifyedge: Path | None = typer.Option(None, "--certifyedge"),
+    provability_fabric: Path | None = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Path | None = typer.Option(None, "--scientific-memory"),
     release_grade: bool = typer.Option(
         False,
         "--release-grade",
         help="Also evaluate release-grade ingest adequacy (diagnostic only).",
     ),
-    json_out: Optional[Path] = typer.Option(
+    json_out: Path | None = typer.Option(
         None,
         "--json-out",
         help="Write structured JSON report to this path.",
@@ -916,18 +919,18 @@ def producer_doctor_cmd(
 
 @app.command("release-readiness")
 def release_readiness_cmd(
-    config: Optional[Path] = typer.Option(None, "--config"),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
-    labtrust: Optional[Path] = typer.Option(None, "--labtrust"),
-    certifyedge: Optional[Path] = typer.Option(None, "--certifyedge"),
-    provability_fabric: Optional[Path] = typer.Option(None, "--provability-fabric"),
-    scientific_memory: Optional[Path] = typer.Option(None, "--scientific-memory"),
-    live_ci_report: Optional[Path] = typer.Option(
+    config: Path | None = typer.Option(None, "--config"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
+    labtrust: Path | None = typer.Option(None, "--labtrust"),
+    certifyedge: Path | None = typer.Option(None, "--certifyedge"),
+    provability_fabric: Path | None = typer.Option(None, "--provability-fabric"),
+    scientific_memory: Path | None = typer.Option(None, "--scientific-memory"),
+    live_ci_report: Path | None = typer.Option(
         None,
         "--live-ci-report",
         help="Verify reports/live-ci.json schema and release evidence_grade.",
     ),
-    live_ci_packet: Optional[Path] = typer.Option(
+    live_ci_packet: Path | None = typer.Option(
         None,
         "--live-ci-packet",
         help="Verify packets/live-ci with --reproduce-smoke.",
@@ -937,7 +940,7 @@ def release_readiness_cmd(
         "--skip-fixtures",
         help="Skip embedded golden fixture validation.",
     ),
-    json_out: Optional[Path] = typer.Option(None, "--json-out"),
+    json_out: Path | None = typer.Option(None, "--json-out"),
     strict: bool = typer.Option(
         False,
         "--strict",
@@ -1001,7 +1004,7 @@ def verify_packet_cmd(
         "--reproduce-smoke",
         help="Re-run simulate checks for valid/invalid cases, explain, and rendering.",
     ),
-    config: Optional[Path] = typer.Option(None, "--config"),
+    config: Path | None = typer.Option(None, "--config"),
 ) -> None:
     """Verify benchmark packet structure and reproducibility fixtures."""
     from pcs_bench.packet import verify_benchmark_packet
@@ -1024,7 +1027,7 @@ def report_cmd(
     input: Path = typer.Option(..., "--input", help="Input BenchmarkReport JSON."),
     format: str = typer.Option("markdown", "--format", help="markdown|html|csv|json"),
     out: Path = typer.Option(..., "--out", help="Output path."),
-    baseline: Optional[Path] = typer.Option(None, "--baseline", help="Baseline for regression section."),
+    baseline: Path | None = typer.Option(None, "--baseline", help="Baseline for regression section."),
 ) -> None:
     """Generate human-readable report from BenchmarkReport JSON."""
     report = load_report(input)
@@ -1054,7 +1057,7 @@ def report_cmd(
 def compare_cmd(
     old: Path = typer.Option(..., "--old", help="Baseline report JSON."),
     new: Path = typer.Option(..., "--new", help="New report JSON."),
-    out: Optional[Path] = typer.Option(None, "--out", help="Optional output file."),
+    out: Path | None = typer.Option(None, "--out", help="Optional output file."),
     format: str = typer.Option("text", "--format", help="text|json"),
 ) -> None:
     """Compare two benchmark reports."""
@@ -1083,9 +1086,9 @@ def compare_cmd(
 @app.command("validate-cases")
 def validate_cases_cmd(
     suite: str = typer.Option(..., "--suite", help="Suite alias or 'all'."),
-    config: Optional[Path] = typer.Option(None, "--config"),
+    config: Path | None = typer.Option(None, "--config"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Skip pcs validate calls."),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
 ) -> None:
     """Validate benchmark case manifests."""
     cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
@@ -1117,9 +1120,9 @@ def ingest_producer_output_cmd(
         help="PcsBenchIngest.v0 file or producer benchmark_runs directory.",
     ),
     out: Path = typer.Option(..., "--out", help="Normalized BenchmarkReport.v0 output path."),
-    suite: Optional[str] = typer.Option(None, "--suite", help="Override benchmark_suite_id."),
-    pcs_core: Optional[Path] = typer.Option(None, "--pcs-core"),
-    config: Optional[Path] = typer.Option(None, "--config"),
+    suite: str | None = typer.Option(None, "--suite", help="Override benchmark_suite_id."),
+    pcs_core: Path | None = typer.Option(None, "--pcs-core"),
+    config: Path | None = typer.Option(None, "--config"),
 ) -> None:
     """Normalize a producer-native benchmark report into pcs-bench BenchmarkReport.v0."""
     from pcs_bench.producer_ingest import ingest_producer_output
