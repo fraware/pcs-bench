@@ -158,7 +158,7 @@ Producer repositories publish a standard ingest file (`pcs_bench_ingest.v0.json`
 
 An independent, pinned-source research harness compares principal/capability claims, resource patterns, read/write footprints, and certificate claim classes against separately supplied evidence. Results are **consistent**, **contradicted**, or **insufficient**; they are diagnostic and do not authorize execution or certify a deployment.
 
-See [the pinned-source conformance methodology](docs/agent-evidence-boundaries.md), [the disposable effect-commit study](docs/effect-commit-study.md), [the real ACS/Cedar integration](docs/acs-effect-study.md), and [the commit-time guarded-target study](docs/guarded-target-study.md). Dedicated CI checks pinned PF-Core code, enforcing native ACS/Cedar, target-side atomic revocation and access controls, and Python 3.11/3.12. All three experiments export machine-readable reports. A controlled PASS does not authenticate a caller or certify deployment safety.
+See [pinned-source conformance](docs/agent-evidence-boundaries.md), [disposable effect-commit observations](docs/effect-commit-study.md), [real ACS/Cedar integration](docs/acs-effect-study.md), [target-owned policy checks](docs/guarded-target-study.md), and [Ed25519-authenticated commits](docs/authenticated-target-study.md). Dedicated CI tests real ACS/Cedar via enforcing Agent Hooks, trusted target-side policy and key revocation, signed action/recipient binding, replay resistance, and independent SQLite effects under Python 3.11/3.12. Each experimental tier publishes machine-readable evidence. A controlled PASS never implies complete ACS mediation, authenticated operator identity, cryptographic attestation, or deployment certification.
 
 ---
 
