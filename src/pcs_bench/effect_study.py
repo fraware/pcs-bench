@@ -15,11 +15,11 @@ import select
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterator
 
 from pcs_bench.effect_boundary import Action, Policy, decide, dispatch, post_commit, read_target
 
@@ -174,7 +174,7 @@ def run_study(database: Path) -> dict[str, object]:
     base = Path(__file__).resolve().parent
     result = {
         "protocol": "agent-effect-boundary-study-v1",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "source_digests": {
             "effect_boundary.py": _digest_file(base / "effect_boundary.py"),
             "effect_target.py": _digest_file(base / "effect_target.py"),
