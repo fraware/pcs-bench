@@ -688,13 +688,13 @@ def check_producer_ingests_cmd(
     scientific_memory: Path | None = typer.Option(None, "--scientific-memory"),
 ) -> None:
     """Report PcsBenchIngest.v0 presence and validation for each producer repo."""
+    from pcs_bench.ingest_validation import validate_ingest_json
     from pcs_bench.producer_fixtures import (
         PRODUCER_FIXTURE_DIRS,
         fixture_ingest_path,
         resolve_schema_root,
     )
     from pcs_bench.producer_gate import PRODUCER_BENCHMARKS, _repo_for_producer
-    from pcs_bench.ingest_validation import validate_ingest_json
 
     cfg = _load_config(config).apply_cli_overrides(
         pcs_core=pcs_core,
@@ -816,7 +816,6 @@ def validate_ingest_cmd(
 ) -> None:
     """Validate a producer PcsBenchIngest.v0 payload against pcs-core schemas."""
     from pcs_bench.ingest_validation import validate_ingest_developer_warnings, validate_ingest_json
-
     from pcs_bench.producer_fixtures import resolve_schema_root
 
     cfg = _load_config(config).apply_cli_overrides(pcs_core=pcs_core)
