@@ -8,6 +8,7 @@ on:
       - "tests/fixtures/acs_effect/manifest.yaml"
       - "tests/integration/test_acs_effect_host.py"
       - "src/pcs_bench/acs_effect_host.py"
+      - "src/pcs_bench/acs_effect_study.py"
       - "docs/effect-commit-study.md"
       - "tests/integration/test_effect_study.py"
       - "tests/integration/test_effect_commit_boundary.py"
@@ -27,6 +28,7 @@ on:
       - "tests/fixtures/acs_effect/manifest.yaml"
       - "tests/integration/test_acs_effect_host.py"
       - "src/pcs_bench/acs_effect_host.py"
+      - "src/pcs_bench/acs_effect_study.py"
       - "docs/effect-commit-study.md"
       - "tests/integration/test_effect_study.py"
       - "tests/integration/test_effect_commit_boundary.py"
@@ -131,9 +133,24 @@ jobs:
       - name: Lint ACS host and integration tests
         run: |
           ruff check src/pcs_bench/acs_effect_host.py \
+            src/pcs_bench/acs_effect_study.py \
             tests/integration/test_acs_effect_host.py
 
       - name: Run genuine Cedar authorization against disposable target
         env:
           ACS_EFFECT_INTEGRATION: "1"
         run: python -m pytest -q tests/integration/test_acs_effect_host.py
+
+      - name: Produce source-bound real ACS/Cedar experiment report
+        env:
+          ACS_EFFECT_INTEGRATION: "1"
+        run: |
+          mkdir -p reports
+          python -m pcs_bench.acs_effect_study --out reports/acs-effect-study.json
+
+      - name: Upload real ACS effect study
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-acs-cedar-study-python-${{ matrix.python-version }}
+          path: reports/acs-effect-study.json
+          if-no-files-found: error
