@@ -304,3 +304,19 @@ def test_no_policy_replay_is_treated_as_issuer_execution_evidence():
     verifiers = all_checkers(t)
     verifiers.pop("issuer_execution")
     assert check(t=t, verifiers=verifiers).disposition is not Disposition.ACCEPTED
+
+
+def test_actor_and_issuer_cannot_share_one_trust_root():
+    t = trust()
+    with pytest.raises(ValueError, match="must be distinct"):
+        replace(t, issuer_key_sha256=t.actor_key_sha256)
+
+
+def test_current_trust_digest_changes_with_source_and_verifier_epoch():
+    original = trust()
+    assert original.digest != replace(original, observation_source="target-journal-v2").digest
+    assert original.digest != replace(original, policy_epoch=8).digest
+    assert original.digest != replace(original, checkers=tuple(
+        replace(spec, version="2.0") if spec.check == "issuer_execution" else spec
+        for spec in original.checkers
+    )).digest
