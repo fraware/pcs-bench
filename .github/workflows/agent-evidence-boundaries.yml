@@ -4,6 +4,11 @@ on:
   pull_request:
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/guarded-target-study.md"
+      - "tests/integration/test_acs_guarded_target.py"
+      - "tests/integration/test_guarded_effect_target.py"
+      - "src/pcs_bench/guarded_study.py"
+      - "src/pcs_bench/guarded_target.py"
       - "tests/fixtures/acs_effect/effect_guard.cedar"
       - "tests/fixtures/acs_effect/manifest.yaml"
       - "tests/integration/test_acs_effect_host.py"
@@ -24,6 +29,11 @@ on:
     branches: [main]
     paths:
       - "src/pcs_bench/evidence_boundary.py"
+      - "docs/guarded-target-study.md"
+      - "tests/integration/test_acs_guarded_target.py"
+      - "tests/integration/test_guarded_effect_target.py"
+      - "src/pcs_bench/guarded_study.py"
+      - "src/pcs_bench/guarded_target.py"
       - "tests/fixtures/acs_effect/effect_guard.cedar"
       - "tests/fixtures/acs_effect/manifest.yaml"
       - "tests/integration/test_acs_effect_host.py"
@@ -85,7 +95,9 @@ jobs:
             src/pcs_bench/effect_study.py \
             tests/unit/test_effect_boundary.py \
             tests/integration/test_effect_commit_boundary.py \
-            tests/integration/test_effect_study.py
+            tests/integration/test_effect_study.py \
+            src/pcs_bench/guarded_target.py \
+            tests/integration/test_guarded_effect_target.py
 
       - name: Run positive, negative, and upstream-source probes
         env:
@@ -96,7 +108,8 @@ jobs:
             tests/integration/test_pf_core_evidence_boundary.py \
             tests/unit/test_effect_boundary.py \
             tests/integration/test_effect_commit_boundary.py \
-            tests/integration/test_effect_study.py
+            tests/integration/test_effect_study.py \
+            tests/integration/test_guarded_effect_target.py
 
       - name: Generate target-side effect experiment report
         run: |
@@ -134,12 +147,17 @@ jobs:
         run: |
           ruff check src/pcs_bench/acs_effect_host.py \
             src/pcs_bench/acs_effect_study.py \
-            tests/integration/test_acs_effect_host.py
+            tests/integration/test_acs_effect_host.py \
+            src/pcs_bench/guarded_study.py \
+            tests/integration/test_acs_guarded_target.py
 
       - name: Run genuine Cedar authorization against disposable target
         env:
           ACS_EFFECT_INTEGRATION: "1"
-        run: python -m pytest -q tests/integration/test_acs_effect_host.py
+        run: |
+          python -m pytest -q \
+            tests/integration/test_acs_effect_host.py \
+            tests/integration/test_acs_guarded_target.py
 
       - name: Produce source-bound real ACS/Cedar experiment report
         env:
@@ -153,4 +171,16 @@ jobs:
         with:
           name: real-acs-cedar-study-python-${{ matrix.python-version }}
           path: reports/acs-effect-study.json
+          if-no-files-found: error
+      - name: Generate real ACS target-owned commit-time policy report
+        env:
+          ACS_EFFECT_INTEGRATION: "1"
+        run: |
+          python -m pcs_bench.guarded_study --out reports/acs-guarded-target-study.json
+
+      - name: Upload target-owned policy report
+        uses: actions/upload-artifact@v4
+        with:
+          name: guarded-acs-target-python-${{ matrix.python-version }}
+          path: reports/acs-guarded-target-study.json
           if-no-files-found: error
