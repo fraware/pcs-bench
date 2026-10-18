@@ -395,12 +395,12 @@
       "event_at": 100,
       "appraisal_at": 150,
       "change": {
-        "dependency": "policy",
+        "dependency": "issuer_key",
         "mode": "updated",
-        "effective_at": 110
+        "effective_at": 90
       },
-      "expected": "preserve",
-      "rationale": "Issuer execution is distinct from decision correctness for a given policy"
+      "expected": "reappraise",
+      "rationale": "Issuer credential information applicable at execution may affect authentication of execution evidence"
     },
     {
       "id": "T031",
