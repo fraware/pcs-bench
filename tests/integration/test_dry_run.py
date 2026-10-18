@@ -9,27 +9,26 @@ from pcs_bench.cli import app
 BENCH_ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_simulate_labtrust_suite(tmp_path):
+def test_simulate_labtrust_suite(tmp_path, monkeypatch):
     runner = CliRunner()
     out = tmp_path / "report.json"
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        import os
-
-        os.chdir(BENCH_ROOT)
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                "--suite",
-                "labtrust-qc-release",
-                "--simulate",
-                "--out",
-                str(out),
-                "--workspace",
-                str(tmp_path / "ws"),
-            ],
-            catch_exceptions=False,
-        )
+    # Typer's CliRunner wraps Click's runner but does not expose Click's
+    # isolated_filesystem method. Pytest restores cwd automatically.
+    monkeypatch.chdir(BENCH_ROOT)
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--suite",
+            "labtrust-qc-release",
+            "--simulate",
+            "--out",
+            str(out),
+            "--workspace",
+            str(tmp_path / "ws"),
+        ],
+        catch_exceptions=False,
+    )
     assert result.exit_code == 0, result.output
     assert out.exists()
     data = out.read_text(encoding="utf-8")
@@ -37,40 +36,34 @@ def test_simulate_labtrust_suite(tmp_path):
     assert "release_reproducibility_score" in data
 
 
-def test_simulate_all_suites_ci(tmp_path):
+def test_simulate_all_suites_ci(tmp_path, monkeypatch):
     runner = CliRunner()
     out = tmp_path / "ci.json"
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        import os
-
-        os.chdir(BENCH_ROOT)
-        result = runner.invoke(
-            app,
-            [
-                "run",
-                "--suite",
-                "all",
-                "--simulate",
-                "--ci",
-                "--out",
-                str(out),
-            ],
-            catch_exceptions=False,
-        )
+    monkeypatch.chdir(BENCH_ROOT)
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--suite",
+            "all",
+            "--simulate",
+            "--ci",
+            "--out",
+            str(out),
+        ],
+        catch_exceptions=False,
+    )
     assert result.exit_code == 0, result.output
 
 
-def test_validate_cases():
+def test_validate_cases(monkeypatch):
     runner = CliRunner()
-    with runner.isolated_filesystem():
-        import os
-
-        os.chdir(BENCH_ROOT)
-        result = runner.invoke(
-            app,
-            ["validate-cases", "--suite", "all", "--dry-run"],
-            catch_exceptions=False,
-        )
+    monkeypatch.chdir(BENCH_ROOT)
+    result = runner.invoke(
+        app,
+        ["validate-cases", "--suite", "all", "--dry-run"],
+        catch_exceptions=False,
+    )
     assert result.exit_code == 0, result.output
 
 
@@ -81,30 +74,29 @@ def test_list_suites():
     assert "labtrust-qc-release" in result.output
 
 
-def test_report_markdown(tmp_path):
+def test_report_markdown(tmp_path, monkeypatch):
     runner = CliRunner()
     report_json = tmp_path / "report.json"
-    with runner.isolated_filesystem(temp_dir=tmp_path):
-        import os
-
-        os.chdir(BENCH_ROOT)
-        runner.invoke(
-            app,
-            [
-                "run",
-                "--suite",
-                "labtrust-qc-release",
-                "--simulate",
-                "--out",
-                str(report_json),
-            ],
-            catch_exceptions=False,
-        )
+    monkeypatch.chdir(BENCH_ROOT)
+    result = runner.invoke(
+        app,
+        [
+            "run",
+            "--suite",
+            "labtrust-qc-release",
+            "--simulate",
+            "--out",
+            str(report_json),
+        ],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 0, result.output
+    assert report_json.exists()
     md_out = tmp_path / "report.md"
     result = runner.invoke(
         app,
         ["report", "--input", str(report_json), "--format", "markdown", "--out", str(md_out)],
         catch_exceptions=False,
     )
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output
     assert "# PCS Benchmark Report" in md_out.read_text(encoding="utf-8")

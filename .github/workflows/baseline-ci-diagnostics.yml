@@ -1,0 +1,70 @@
+name: Baseline CI diagnostics
+
+on:
+  push:
+    branches: [fix/pcs-bench-ci-baseline]
+  pull_request:
+    paths:
+      - ".github/workflows/baseline-ci-diagnostics.yml"
+  workflow_dispatch:
+
+jobs:
+  observe-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install baseline dependencies
+        run: python -m pip install -e ".[dev]" ruff
+
+      - name: Record source and toolchain
+        run: |
+          mkdir -p diagnostics
+          git rev-parse HEAD > diagnostics/source.sha
+          python --version > diagnostics/python.txt
+          python -m pip freeze > diagnostics/dependencies.txt
+          ruff --version > diagnostics/ruff-version.txt
+
+      - name: Run all legacy Ruff checks independently
+        shell: bash
+        run: |
+          set +e
+          ruff check src tests > diagnostics/ruff.txt 2>&1
+          code=$?
+          printf '%s\n' "$code" > diagnostics/ruff.exit
+          echo "ruff exit: $code"
+          exit 0
+
+      - name: Run complete baseline pytest independently
+        shell: bash
+        run: |
+          set +e
+          python -m pytest -q > diagnostics/pytest.txt 2>&1
+          code=$?
+          printf '%s\n' "$code" > diagnostics/pytest.exit
+          echo "pytest exit: $code"
+          exit 0
+
+      - name: Upload complete diagnostics, including failing checks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pcs-bench-baseline-diagnostics-python-${{ matrix.python-version }}
+          path: diagnostics/
+          if-no-files-found: error
+
+      - name: Enforce original quality gates
+        shell: bash
+        run: |
+          echo "Ruff status: $(cat diagnostics/ruff.exit)"
+          echo "Pytest status: $(cat diagnostics/pytest.exit)"
+          test "$(cat diagnostics/ruff.exit)" -eq 0
+          test "$(cat diagnostics/pytest.exit)" -eq 0
