@@ -10,12 +10,12 @@ from pathlib import Path
 from pcs_bench.adapters.base import CommandResult
 from pcs_bench.artifacts import discover_release_layout, enrich_analysis
 from pcs_bench.benchmark_vocabulary import (
+    is_benchmark_pass_expected,
     SYSTEM_ADMITTED,
     SYSTEM_REJECTED,
-    is_benchmark_pass_expected,
 )
-from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.constants import RESPONSIBLE_COMPONENT_TO_REPO
+from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.simulation import simulate_outcome
 
 StageFn = Callable[[CaseExecutionContext], None]
