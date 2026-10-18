@@ -71,12 +71,12 @@ jobs:
       - name: Producer offline gate
         run: |
           if [ -d pcs-core/schemas ]; then
-            python -m pcs_bench gate --suite all --simulate \
+            python -m pcs_bench gate --suite all \
               --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke \
               --out reports/producer-ci.json --out-packet packets/producer-ci \
               --pcs-core pcs-core
           else
-            python -m pcs_bench gate --suite all --simulate \
+            python -m pcs_bench gate --suite all \
               --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke \
               --out reports/producer-ci.json --out-packet packets/producer-ci
           fi
