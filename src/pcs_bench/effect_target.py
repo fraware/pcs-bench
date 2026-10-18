@@ -11,7 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -87,7 +87,7 @@ def commit(database: Path, action: Action) -> tuple[int, dict[str, object]]:
                     action.tenant,
                     action.resource,
                     action.delta,
-                    datetime.now(timezone.utc).isoformat(),
+                    datetime.now(UTC).isoformat(),
                 ),
             )
             con.execute("COMMIT")
@@ -151,7 +151,7 @@ def make_handler(database: Path) -> type[BaseHTTPRequestHandler]:
             try:
                 data = json.loads(self.rfile.read(int(size)))
                 if not isinstance(data, dict):
-                    raise ValueError("expected object")
+                    raise TypeError("expected object")
                 expected = {
                     "operation_id", "principal", "tenant", "resource", "delta",
                     "drop_reply_after_commit",
@@ -165,7 +165,7 @@ def make_handler(database: Path) -> type[BaseHTTPRequestHandler]:
                     raise ValueError("invalid action identity types")
                 drop = data.get("drop_reply_after_commit", False)
                 if not isinstance(drop, bool):
-                    raise ValueError("invalid fault flag")
+                    raise TypeError("invalid fault flag")
                 status, receipt = commit(database, action)
             except (ValueError, KeyError, TypeError, json.JSONDecodeError):
                 self._reply(400, {"error": "invalid_action"})
