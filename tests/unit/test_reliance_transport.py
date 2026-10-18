@@ -320,3 +320,17 @@ def test_current_trust_digest_changes_with_source_and_verifier_epoch():
         replace(spec, version="2.0") if spec.check == "issuer_execution" else spec
         for spec in original.checkers
     )).digest
+
+
+def test_unexpected_verifier_exception_fails_closed_without_crashing_appraisal():
+    t = trust()
+    verifiers = all_checkers(t)
+
+    def faulty(_claim, _trust):
+        raise AssertionError("fault inside externally trusted checker")
+
+    verifiers["issuer_execution"] = faulty
+    result = check(t=t, verifiers=verifiers)
+    assert result.disposition is Disposition.UNDETERMINED
+    assert result.reasons == ("verifier_error:issuer_execution",)
+    assert "issuer_execution" not in result.established_checks
