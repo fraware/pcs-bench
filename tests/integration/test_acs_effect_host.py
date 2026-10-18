@@ -33,7 +33,7 @@ def test_native_acs_release_is_the_selected_published_version():
 
 def test_real_cedar_allows_and_denies_against_target_journal(tmp_path: Path):
     async def scenario(url: str) -> None:
-        host = AcsEffectHost(MANIFEST, epoch=7)
+        host = AcsEffectHost(MANIFEST, epoch=7, legacy_cedar_principal_bridge=True)
         baseline = Action("acs-good", "agent-1", "tenant-a", "account:a", 5)
         authorization = await host.authorize(baseline)
         assert authorization.permitted, authorization.reason
@@ -62,7 +62,7 @@ def test_real_cedar_allows_and_denies_against_target_journal(tmp_path: Path):
 
 def test_acs_decision_bound_to_exact_action_and_epoch(tmp_path: Path):
     async def scenario(url: str) -> None:
-        host = AcsEffectHost(MANIFEST, epoch=2)
+        host = AcsEffectHost(MANIFEST, epoch=2, legacy_cedar_principal_bridge=True)
         action = Action("acs-mut", "agent-1", "tenant-a", "account:a", 4)
         approved = await host.authorize(action)
         assert approved.permitted, approved.reason
@@ -84,7 +84,7 @@ def test_acs_decision_bound_to_exact_action_and_epoch(tmp_path: Path):
 
 def test_acs_authorized_commit_with_lost_reply_is_unknown(tmp_path: Path):
     async def scenario(url: str) -> None:
-        host = AcsEffectHost(MANIFEST, epoch=4)
+        host = AcsEffectHost(MANIFEST, epoch=4, legacy_cedar_principal_bridge=True)
         action = Action("acs-unknown", "agent-1", "tenant-a", "account:a", 3)
         granted = await host.authorize(action)
         assert granted.permitted, granted.reason
@@ -97,3 +97,15 @@ def test_acs_authorized_commit_with_lost_reply_is_unknown(tmp_path: Path):
 
     with disposable_target(tmp_path / "acs-unknown.sqlite3") as url:
         asyncio.run(scenario(url))
+
+
+def test_published_alpha4_unmodified_hooks_shape_is_denied():
+    """Known version-specific regression: malformed principal mapping fails closed."""
+    async def scenario() -> None:
+        host = AcsEffectHost(MANIFEST, epoch=7, legacy_cedar_principal_bridge=False)
+        a = Action("wire-only", "agent-1", "tenant-a", "account:a", 5)
+        verdict = await host.authorize(a)
+        assert verdict.permitted is False
+        assert verdict.reason == "runtime_error:policy_invocation_failed"
+
+    asyncio.run(scenario())
