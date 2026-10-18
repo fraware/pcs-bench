@@ -19,7 +19,7 @@ if os.environ.get("ACS_EFFECT_INTEGRATION") != "1":
 from agent_control_spec import __version__ as ACS_VERSION
 
 from pcs_bench.acs_effect_host import AcsEffectHost
-from pcs_bench.effect_boundary import Action, read_target
+from pcs_bench.effect_boundary import Action, post_commit, read_target
 from pcs_bench.effect_study import disposable_target
 
 MANIFEST = Path(__file__).resolve().parents[1] / "fixtures/acs_effect/manifest.yaml"
@@ -37,20 +37,28 @@ def test_real_cedar_allows_and_denies_against_target_journal(tmp_path: Path):
         baseline = Action("acs-good", "agent-1", "tenant-a", "account:a", 5)
         authorization = await host.authorize(baseline)
         assert authorization.permitted, authorization.reason
+        assert len(host.manifest_sha256) == 64
+        assert len(host.cedar_sha256) == 64
         allowed = await host.dispatch(url, baseline, authorization)
         assert allowed.status == "committed"
         assert len(read_target(url, "journal")["effects"]) == 1
 
         invalid = (
-            replace(baseline, operation_id="bad-actor", principal="intruder"),
-            replace(baseline, operation_id="bad-tenant", tenant="tenant-b"),
-            replace(baseline, operation_id="bad-resource", resource="account:b"),
-            replace(baseline, operation_id="bad-value", delta=20),
-            replace(baseline, operation_id="bad-negative", delta=-1),
+            (replace(baseline, operation_id="bad-actor", principal="intruder"),
+             "effect_actor_mismatch"),
+            (replace(baseline, operation_id="bad-tenant", tenant="tenant-b"),
+             "effect_tenant_mismatch"),
+            (replace(baseline, operation_id="bad-resource", resource="account:b"),
+             "effect_resource_mismatch"),
+            (replace(baseline, operation_id="bad-value", delta=20),
+             "effect_delta_excessive"),
+            (replace(baseline, operation_id="bad-negative", delta=-1),
+             "effect_delta_negative"),
         )
-        for action in invalid:
+        for action, reason in invalid:
             verdict = await host.authorize(action)
             assert not verdict.permitted, (action, verdict.reason)
+            assert verdict.reason == reason
             outcome = await host.dispatch(url, action, verdict)
             assert outcome.status == "blocked"
         assert len(read_target(url, "journal")["effects"]) == 1
@@ -76,6 +84,7 @@ def test_acs_decision_bound_to_exact_action_and_epoch(tmp_path: Path):
 
         revoked = await host.authorize(replace(action, operation_id="acs-revoked"))
         assert not revoked.permitted, revoked.reason
+        assert revoked.reason == "effect_revoked"
         assert len(read_target(url, "journal")["effects"]) == 0
 
     with disposable_target(tmp_path / "acs-mut.sqlite3") as url:
@@ -109,3 +118,26 @@ def test_published_alpha4_unmodified_hooks_shape_is_denied():
         assert verdict.reason == "runtime_error:policy_invocation_failed"
 
     asyncio.run(scenario())
+
+
+def test_genuine_acs_denial_does_not_protect_unmediated_target(tmp_path: Path):
+    """Concrete negative control for the cooperative host's mediation boundary."""
+
+    async def scenario(url: str) -> None:
+        host = AcsEffectHost(MANIFEST, legacy_cedar_principal_bridge=True)
+        forbidden = Action("acs-direct-bypass", "agent-1", "tenant-a", "account:a", 50)
+        denial = await host.authorize(forbidden)
+        assert denial.permitted is False
+        assert denial.reason == "effect_delta_excessive"
+        mediated = await host.dispatch(url, forbidden, denial)
+        assert mediated.status == "blocked"
+        assert len(read_target(url, "journal")["effects"]) == 0
+
+        # Deliberate bypass of a synthetic host; NOT a security finding about ACS.
+        status, receipt = post_commit(url, forbidden)
+        assert status == 200 and receipt["status"] == "committed"
+        assert len(read_target(url, "journal")["effects"]) == 1
+        assert read_target(url, "state")["balances"] == {"account:a": 50}
+
+    with disposable_target(tmp_path / "acs-bypass.sqlite3") as url:
+        asyncio.run(scenario(url))
