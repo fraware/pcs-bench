@@ -9,8 +9,9 @@ independent evidence and trust root, never as a release authorization.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 
 Status = Literal["consistent", "contradicted", "insufficient"]
 
