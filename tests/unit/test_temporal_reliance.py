@@ -122,8 +122,12 @@ def test_unrelated_changes_preserve_prior_reliance():
 def test_verified_bridge_and_refutation_do_not_coexist():
     with pytest.raises(ValueError, match="simultaneously"):
         Change(Dependency.POLICY, ChangeMode.UPDATED, 100, True, True)
-    with pytest.raises(ValueError, match="explicit contradiction"):
+    with pytest.raises(ValueError, match="contradiction or revocation"):
         Change(Dependency.POLICY, ChangeMode.CONTRADICTED, 100, True, False)
+    with pytest.raises(ValueError, match="contradiction or revocation"):
+        Change(Dependency.ACTOR_KEY, ChangeMode.REVOKED, 100, True, False)
+    with pytest.raises(ValueError, match="requires contradiction"):
+        Change(Dependency.POLICY, ChangeMode.UPDATED, 100, False, True)
 
 
 def test_untrusted_timestamps_cannot_use_boolean_values():
