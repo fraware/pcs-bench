@@ -30,14 +30,14 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey,
 from pcs_bench.authenticated_target import (
     CLOCK_SKEW,
     MAX_BODY,
-    _bytes as actor_bytes,
-    _preflight as actor_preflight,
     _reject_constant,
     _strict_object,
     audience,
     authenticated_process,
-    initialize as initialize_actor,
 )
+from pcs_bench.authenticated_target import _bytes as actor_bytes
+from pcs_bench.authenticated_target import _preflight as actor_preflight
+from pcs_bench.authenticated_target import initialize as initialize_actor
 from pcs_bench.effect_boundary import Action, action_digest
 from pcs_bench.guarded_target import _commit_in_tx, allowed, db_connect, snapshot
 
