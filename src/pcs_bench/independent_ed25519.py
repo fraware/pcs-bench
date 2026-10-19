@@ -276,5 +276,5 @@ def verify_pair(raw: bytes, context: VerificationContext) -> Assessment:
             raise _BadWire("invalid_pair_schema")
         assert isinstance(value, dict)
         return _appraise(value, context)
-    except (_BadWire, TypeError, ValueError, UnicodeError, OverflowError) as exc:
+    except (_BadWire, TypeError, ValueError, UnicodeError, OverflowError, RecursionError) as exc:
         return Assessment(Outcome.REFUTED, str(exc) or "invalid_signed_wire")
