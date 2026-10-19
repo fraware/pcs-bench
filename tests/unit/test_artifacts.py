@@ -2,7 +2,12 @@
 
 from pathlib import Path
 
-from pcs_bench.artifacts import analyze_certificate, analyze_registry, discover_release_layout, enrich_analysis
+from pcs_bench.artifacts import (
+    analyze_certificate,
+    analyze_registry,
+    discover_release_layout,
+    enrich_analysis,
+)
 
 BENCH_ROOT = Path(__file__).resolve().parents[2]
 VALID_RELEASE = (

@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 from pcs_bench.report_export import (
     export_metrics_for_pcs_core,
     metrics_contract,

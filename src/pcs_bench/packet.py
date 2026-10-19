@@ -7,7 +7,7 @@ import platform
 import shutil
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +18,6 @@ from pcs_bench.report_renderers.html import render_html
 from pcs_bench.report_renderers.markdown import render_markdown
 from pcs_bench.reports import load_report
 from pcs_bench.schemas import BenchmarkReport
-
 
 PACKET_REQUIRED_FILES = [
     "BenchmarkReport.v0.json",
@@ -121,7 +120,7 @@ def export_benchmark_packet(
 
     meta = {
         "packet_version": "v0",
-        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "exported_at": datetime.now(UTC).isoformat(),
         "report_id": report.report_id,
         "digest": report.signature_or_digest,
         "execution_mode": report.summary.get("execution_mode", "unknown"),
@@ -306,8 +305,14 @@ def _verify_reproduce_smoke(
             "missing_sections": missing,
         }
 
-    check_values = [c.get("ok") for c in checks.values() if isinstance(c, dict)]
-    passed = bool(check_values) and all(check_values)
+    check_values = [
+        c.get("ok")
+        for c in checks.values()
+        if isinstance(c, dict) and c.get("applicability") != "not_applicable"
+    ]
+    # Not applicable is not evidence of success; all *applicable* checks must
+    # pass, and at least one applicable reproduction check must have run.
+    passed = bool(check_values) and all(value is True for value in check_values)
     if not passed:
         result.valid = False
     return _reproduction_report_payload(packet_dir, checks, passed=passed)
@@ -471,16 +476,29 @@ def _verify_producer_coverage_smoke(
     explain_path = packet_dir / "explain_quality.json"
     report_path = packet_dir / "BenchmarkReport.v0.json"
     explain_doc: dict | None = None
-    if explain_path.exists():
+    declared = explain_path.exists()
+    if declared:
         explain_doc = json.loads(explain_path.read_text(encoding="utf-8"))
     elif report_path.exists():
         report_data = json.loads(report_path.read_text(encoding="utf-8"))
-        explain_doc = (report_data.get("coverage") or {}).get("explain_quality")
+        report_coverage = report_data.get("coverage") or {}
+        declared = "explain_quality" in report_coverage
+        explain_doc = report_coverage.get("explain_quality")
 
-    if not explain_doc:
-        result.errors.append("reproduce-smoke: explain_quality report missing")
+    if not declared:
+        # A pure benchmark simulation does not purport to establish producer
+        # explain-quality. Do not manufacture evidence or mark that check OK.
+        checks["explain_quality_schema"] = {
+            "ok": None,
+            "applicability": "not_applicable",
+            "detail": "packet contains no explain-quality assertion to verify",
+        }
+        return checks
+
+    if not isinstance(explain_doc, dict) or not explain_doc:
+        result.errors.append("reproduce-smoke: declared explain_quality report missing or invalid")
         result.valid = False
-        checks["explain_quality_schema"] = {"ok": False, "detail": "missing explain_quality"}
+        checks["explain_quality_schema"] = {"ok": False, "detail": "invalid declared explain_quality"}
         return checks
 
     explain_errors = validate_instance(explain_doc, "ExplainQualityReport.v0", pcs_root)
@@ -512,7 +530,7 @@ def _reproduction_report_payload(
     return {
         "schema_version": "v0",
         "packet_dir": str(packet_dir.resolve()),
-        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "verified_at": datetime.now(UTC).isoformat(),
         "passed": passed,
         "checks": checks,
     }

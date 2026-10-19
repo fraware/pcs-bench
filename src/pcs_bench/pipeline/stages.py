@@ -14,8 +14,8 @@ from pcs_bench.benchmark_vocabulary import (
     SYSTEM_REJECTED,
     is_benchmark_pass_expected,
 )
-from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.constants import RESPONSIBLE_COMPONENT_TO_REPO
+from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.simulation import simulate_outcome
 
 StageFn = Callable[[CaseExecutionContext], None]

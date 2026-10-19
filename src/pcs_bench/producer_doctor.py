@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from pcs_bench.adapters.base import AdapterStatus
 from pcs_bench.adapters.certifyedge import CertifyEdgeAdapter
 from pcs_bench.adapters.labtrust import LabTrustAdapter
 from pcs_bench.adapters.provability_fabric import ProvabilityFabricAdapter
 from pcs_bench.adapters.scientific_memory import ScientificMemoryAdapter
-from pcs_bench.adapters.base import AdapterStatus
 from pcs_bench.config import BenchConfig
 from pcs_bench.ingest_validation import (
     PRODUCER_EMBEDDED_REF_FIELDS,
@@ -21,13 +21,13 @@ from pcs_bench.ingest_validation import (
 from pcs_bench.producer_contracts import (
     PRODUCER_CONTRACTS,
     ProducerContract,
+    rel_path_under_repo,
     repo_for_contract,
     resolve_first_existing,
     resolve_native_producer_target,
     resolve_pf_registry,
 )
 from pcs_bench.producer_fixtures import fixture_ingest_path
-from pcs_bench.producer_contracts import rel_path_under_repo
 from pcs_bench.producer_gate import resolve_benchmark_output_dir, resolve_canonical_ingest_path
 
 
@@ -265,7 +265,7 @@ def run_producer_doctor(
     schema_root: Path,
     release_grade: bool = False,
 ) -> ProducerDoctorResult:
-    result = ProducerDoctorResult(generated_at=datetime.now(timezone.utc).isoformat())
+    result = ProducerDoctorResult(generated_at=datetime.now(UTC).isoformat())
     for contract in PRODUCER_CONTRACTS:
         result.producers.append(
             diagnose_producer(cfg, contract, schema_root=schema_root, release_grade=release_grade)

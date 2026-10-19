@@ -7,22 +7,20 @@ from pathlib import Path
 
 from pcs_bench.config import BenchConfig
 from pcs_bench.producer_contracts import contract_for
+from pcs_bench.producer_fixtures import resolve_schema_root
 from pcs_bench.producer_gate import (
     _canonical_ingest_release_ready,
     collect_producer_ingests,
 )
-from pcs_bench.producer_fixtures import resolve_schema_root
 
 FIXTURE_ROOT = Path(__file__).resolve().parents[1] / "fixtures" / "producer_ingest"
 _PKG_ROOT = Path(__file__).resolve().parents[2] / "src" / "pcs_bench"
-
 
 def _pcs_core() -> Path:
     candidate = Path(__file__).resolve().parents[3] / "pcs-core"
     if (candidate / "schemas").is_dir():
         return candidate
     return _PKG_ROOT
-
 
 def test_canonical_ingest_release_ready_accepts_valid_fixture(
     tmp_path: Path, monkeypatch
@@ -43,7 +41,6 @@ def test_canonical_ingest_release_ready_accepts_valid_fixture(
         repo, contract, schema_root=schema_root, release_grade=True
     )
     assert ready == dest.resolve()
-
 
 def test_collect_skips_benchmark_when_canonical_ingest_ready(tmp_path: Path, monkeypatch) -> None:
     from pcs_bench.producer_gate import PRODUCER_BENCHMARKS

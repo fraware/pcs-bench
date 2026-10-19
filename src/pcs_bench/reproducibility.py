@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pcs_bench.config import BenchConfig
@@ -63,8 +63,8 @@ def build_fixture_manifest(config: BenchConfig | None = None) -> FixtureManifest
             )
 
     return FixtureManifest(
-        manifest_id=f"fixture-manifest-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
-        generated_at=datetime.now(timezone.utc).isoformat(),
+        manifest_id=f"fixture-manifest-{datetime.now(UTC).strftime('%Y%m%d%H%M%S')}",
+        generated_at=datetime.now(UTC).isoformat(),
         benchmarks_root=str(root),
         entries=entries,
     )

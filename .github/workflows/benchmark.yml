@@ -2,7 +2,7 @@ name: PCS Benchmark
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, fix/pcs-bench-ruff-remediation]
   pull_request:
     branches: [main, master]
   workflow_dispatch:
@@ -66,17 +66,16 @@ jobs:
 
       - name: Validate release-grade producer fixtures
         run: python scripts/validate_producer_ingest_fixtures.py --pcs-core pcs-core --release-grade
-        continue-on-error: true
 
       - name: Producer offline gate
         run: |
           if [ -d pcs-core/schemas ]; then
-            python -m pcs_bench gate --suite all --simulate \
+            python -m pcs_bench gate --suite all \
               --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke \
               --out reports/producer-ci.json --out-packet packets/producer-ci \
               --pcs-core pcs-core
           else
-            python -m pcs_bench gate --suite all --simulate \
+            python -m pcs_bench gate --suite all \
               --run-producer-benchmarks --use-producer-fixtures --reproduce-smoke \
               --out reports/producer-ci.json --out-packet packets/producer-ci
           fi

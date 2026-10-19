@@ -6,7 +6,6 @@ import shutil
 from pathlib import Path
 
 from pcs_bench.benchmark_vocabulary import BENCHMARK_FAILED, BENCHMARK_PASSED
-
 from pcs_bench.cases import case_input_dir
 from pcs_bench.pipeline.context import CaseExecutionContext, ExecutionMode, ObservedOutcome
 from pcs_bench.pipeline.stages import (
@@ -116,7 +115,7 @@ def stage_case_inputs(case_ws: CaseWorkspace, suite_dir: Path, case: BenchmarkCa
     case_root = find_case_root(suite_dir, case)
     if not case_root:
         return
-    for _key, rel in case.input_artifacts.items():
+    for rel in case.input_artifacts.values():
         src = (case_root / rel).resolve()
         if not src.exists():
             continue

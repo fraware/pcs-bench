@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pcs_bench.config import BenchConfig, SUITE_ALIASES
+from pcs_bench.config import SUITE_ALIASES, BenchConfig
 
 
 def test_suite_aliases_resolve():

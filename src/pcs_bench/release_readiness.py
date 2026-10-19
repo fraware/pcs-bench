@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from pcs_bench.config import BenchConfig
+from pcs_bench.ingest_validation import validate_ingest_json
 from pcs_bench.packet import verify_benchmark_packet
 from pcs_bench.producer_doctor import run_producer_doctor
 from pcs_bench.producer_fixtures import validate_all_producer_fixtures
 from pcs_bench.producer_gate import PRODUCER_BENCHMARKS, _repo_for_producer
-from pcs_bench.ingest_validation import validate_ingest_json
 
 
 @dataclass
@@ -25,12 +25,11 @@ class ReleaseReadinessResult:
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema_version": "v0",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "ready": self.ready,
             "checks": self.checks,
             "errors": self.errors,
         }
-
 
 def _append_check(
     result: ReleaseReadinessResult,
@@ -42,7 +41,6 @@ def _append_check(
     result.checks.append({"name": name, "ok": ok, "detail": detail})
     if not ok:
         result.errors.append(f"{name}: {detail}")
-
 
 def evaluate_release_readiness(
     cfg: BenchConfig,

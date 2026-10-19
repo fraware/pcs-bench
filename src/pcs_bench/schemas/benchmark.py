@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -120,7 +120,7 @@ class BenchmarkReport(BaseModel):
     report_id: str = Field(default_factory=lambda: f"pcs-bench-report-{uuid4().hex[:12]}")
     benchmark_suite_id: str = "all"
     started_at: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
     completed_at: str | None = None
     source_repo: str | None = None
@@ -136,6 +136,6 @@ class BenchmarkReport(BaseModel):
     dry_run: bool = False
 
     def finalize(self, digest: str | None = None) -> None:
-        self.completed_at = datetime.now(timezone.utc).isoformat()
+        self.completed_at = datetime.now(UTC).isoformat()
         if digest:
             self.signature_or_digest = digest

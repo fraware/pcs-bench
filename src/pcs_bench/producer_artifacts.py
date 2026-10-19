@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -81,7 +81,7 @@ def write_producer_gate_result(
 
     payload: dict[str, Any] = {
         "schema_version": "v0",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "aggregate_report": report_path.name,
         "release_grade": release_grade,
         "use_fixture_fallback": use_fixture_fallback,

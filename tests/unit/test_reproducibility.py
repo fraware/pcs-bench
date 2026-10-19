@@ -1,7 +1,11 @@
 """Tests for fixture manifest."""
 
 from pcs_bench.config import BenchConfig
-from pcs_bench.reproducibility import build_fixture_manifest, save_fixture_manifest, verify_fixture_manifest
+from pcs_bench.reproducibility import (
+    build_fixture_manifest,
+    save_fixture_manifest,
+    verify_fixture_manifest,
+)
 
 
 def test_fixture_manifest_roundtrip(tmp_path):

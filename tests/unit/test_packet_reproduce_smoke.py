@@ -125,3 +125,44 @@ def test_verify_packet_cli_reproduce_smoke(tmp_path: Path) -> None:
         catch_exceptions=False,
     )
     assert result.exit_code == 0, result.output
+
+
+def test_reproduce_smoke_without_claimed_explain_quality_is_explicitly_not_applicable(tmp_path: Path) -> None:
+    from pcs_bench.config import BenchConfig
+
+    report_path = tmp_path / "report.json"
+    packet_dir = tmp_path / "packet"
+    cfg = BenchConfig(benchmarks_root=BENCHMARKS)
+    report = _report_with_scimem_explain().model_copy(update={"coverage": {}})
+    save_report(report, report_path)
+    export_benchmark_packet(report_path, packet_dir, config=cfg)
+
+    outcome = verify_benchmark_packet(packet_dir, cfg, reproduce_smoke=True)
+    assert outcome.valid, outcome.errors
+    payload = json.loads(
+        (packet_dir / "packet_reproduction_report.v0.json").read_text(encoding="utf-8")
+    )
+    check = payload["checks"]["explain_quality_schema"]
+    assert check["ok"] is None
+    assert check["applicability"] == "not_applicable"
+    assert not (packet_dir / "explain_quality.json").exists()
+
+
+def test_reproduce_smoke_rejects_empty_declared_explain_quality(tmp_path: Path) -> None:
+    from pcs_bench.config import BenchConfig
+
+    report_path = tmp_path / "report.json"
+    packet_dir = tmp_path / "packet"
+    cfg = BenchConfig(benchmarks_root=BENCHMARKS)
+    save_report(_report_with_scimem_explain(), report_path)
+    export_benchmark_packet(report_path, packet_dir, config=cfg)
+    assert (packet_dir / "explain_quality.json").exists()
+    (packet_dir / "explain_quality.json").write_text("{}", encoding="utf-8")
+
+    outcome = verify_benchmark_packet(packet_dir, cfg, reproduce_smoke=True)
+    assert not outcome.valid
+    assert any("declared explain_quality" in message for message in outcome.errors)
+    payload = json.loads(
+        (packet_dir / "packet_reproduction_report.v0.json").read_text(encoding="utf-8")
+    )
+    assert payload["checks"]["explain_quality_schema"]["ok"] is False

@@ -191,5 +191,5 @@ def validate_instance(
         return []
     except jsonschema.ValidationError as exc:
         return [exc.message]
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 - preserve boundary error reporting
         return [f"schema validation error: {exc}"]

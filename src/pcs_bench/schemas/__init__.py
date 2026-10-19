@@ -13,9 +13,9 @@ from pcs_bench.schemas.benchmark import (
 
 __all__ = [
     "BenchmarkCase",
-    "BenchmarkSuite",
-    "BenchmarkRun",
     "BenchmarkReport",
+    "BenchmarkRun",
+    "BenchmarkSuite",
     "CommandRecord",
     "FailureRecord",
     "MetricSummary",

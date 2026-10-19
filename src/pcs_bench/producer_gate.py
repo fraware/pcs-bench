@@ -13,25 +13,28 @@ from pcs_bench.adapters.labtrust import LabTrustAdapter
 from pcs_bench.adapters.provability_fabric import ProvabilityFabricAdapter
 from pcs_bench.adapters.scientific_memory import ScientificMemoryAdapter
 from pcs_bench.config import BenchConfig
+from pcs_bench.ingest_validation import validate_ingest_json
+from pcs_bench.producer_artifacts import write_producer_gate_result
 from pcs_bench.producer_contracts import (
     PRODUCER_CONTRACTS,
     ProducerContract,
     contract_for,
-    repo_for_contract,
     rel_path_under_repo,
+    repo_for_contract,
     resolve_first_existing,
     resolve_pf_registry,
 )
-from pcs_bench.producer_fixtures import PRODUCER_FIXTURE_DIRS, fixture_ingest_path
-from pcs_bench.producer_artifacts import write_producer_gate_result
-from pcs_bench.ingest_validation import validate_ingest_json
+from pcs_bench.producer_fixtures import (
+    PRODUCER_FIXTURE_DIRS,
+    fixture_ingest_path,
+    resolve_schema_root,
+)
 from pcs_bench.producer_ingest import (
     ProducerMergeEntry,
     ingest_producer_output,
     merge_benchmark_reports,
     write_producer_merge_manifest,
 )
-from pcs_bench.producer_fixtures import resolve_schema_root
 from pcs_bench.reports import load_report, save_report
 from pcs_bench.schemas import BenchmarkReport
 

@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import sys
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -119,10 +119,10 @@ class RepoAdapter:
         dry_run: bool = False,
     ) -> CommandResult:
         work_dir = (cwd or self.repo_path).resolve()
-        started = datetime.now(timezone.utc)
+        started = datetime.now(UTC)
 
         if dry_run:
-            completed = datetime.now(timezone.utc)
+            completed = datetime.now(UTC)
             result = CommandResult(
                 command=command,
                 cwd=work_dir,
@@ -141,6 +141,7 @@ class RepoAdapter:
                 command,
                 cwd=work_dir,
                 capture_output=True,
+                check=False,
                 text=True,
                 encoding="utf-8",
                 errors="replace",
@@ -159,7 +160,7 @@ class RepoAdapter:
             stdout = ""
             stderr = f"Command not found: {command[0]}"
 
-        completed = datetime.now(timezone.utc)
+        completed = datetime.now(UTC)
         duration_ms = int((completed - started).total_seconds() * 1000)
         result = CommandResult(
             command=command,

@@ -9,11 +9,11 @@ from pcs_bench.adapters.scientific_memory import ScientificMemoryAdapter
 
 __all__ = [
     "AdapterStatus",
-    "CommandResult",
-    "RepoAdapter",
-    "PcsCoreAdapter",
-    "LabTrustAdapter",
     "CertifyEdgeAdapter",
+    "CommandResult",
+    "LabTrustAdapter",
+    "PcsCoreAdapter",
     "ProvabilityFabricAdapter",
+    "RepoAdapter",
     "ScientificMemoryAdapter",
 ]
