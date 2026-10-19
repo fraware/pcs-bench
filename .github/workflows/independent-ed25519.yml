@@ -1,0 +1,42 @@
+name: Independent signed-evidence verification
+
+on:
+  push:
+    branches: [research/independent-signed-evidence-verifier]
+    paths:
+      - "src/pcs_bench/independent_ed25519.py"
+      - "tests/unit/test_independent_ed25519.py"
+      - "docs/independent-signed-evidence.md"
+      - "pyproject.toml"
+      - ".github/workflows/independent-ed25519.yml"
+  pull_request:
+    paths:
+      - "src/pcs_bench/independent_ed25519.py"
+      - "tests/unit/test_independent_ed25519.py"
+      - "docs/independent-signed-evidence.md"
+      - "pyproject.toml"
+      - ".github/workflows/independent-ed25519.yml"
+
+jobs:
+  independent-assertions:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and exact experimental crypto dependency
+        run: |
+          python -m pip install -e ".[dev]" "cryptography==46.0.4" ruff
+          python -m pip check
+      - name: Lint independently reviewable module and fixtures
+        run: |
+          ruff check src/pcs_bench/independent_ed25519.py \
+            tests/unit/test_independent_ed25519.py
+      - name: Run real Ed25519 positive and adversarial cases
+        run: |
+          python -m pytest -q tests/unit/test_independent_ed25519.py
