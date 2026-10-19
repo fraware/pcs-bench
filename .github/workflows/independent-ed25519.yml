@@ -6,6 +6,7 @@ on:
     paths:
       - "src/pcs_bench/independent_ed25519.py"
       - "tests/unit/test_independent_ed25519.py"
+      - "tests/integration/test_independent_signature_producer.py"
       - "docs/independent-signed-evidence.md"
       - "pyproject.toml"
       - ".github/workflows/independent-ed25519.yml"
@@ -13,6 +14,7 @@ on:
     paths:
       - "src/pcs_bench/independent_ed25519.py"
       - "tests/unit/test_independent_ed25519.py"
+      - "tests/integration/test_independent_signature_producer.py"
       - "docs/independent-signed-evidence.md"
       - "pyproject.toml"
       - ".github/workflows/independent-ed25519.yml"
@@ -26,6 +28,11 @@ jobs:
         python-version: ["3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+      - name: Checkout separately pinned producer signing implementation
+        uses: actions/checkout@v4
+        with:
+          ref: 423aa6d8682117474b22dd960da62b490f148361
+          path: producer-reference
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -40,3 +47,9 @@ jobs:
       - name: Run real Ed25519 positive and adversarial cases
         run: |
           python -m pytest -q tests/unit/test_independent_ed25519.py
+      - name: Verify signed records from pinned producer in separate Python interpreter
+        env:
+          PCS_PINNED_PRODUCER: ${{ github.workspace }}/producer-reference
+        run: |
+          python -m pytest -q tests/integration/test_independent_signature_producer.py
+
