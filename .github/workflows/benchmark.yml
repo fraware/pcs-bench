@@ -66,7 +66,6 @@ jobs:
 
       - name: Validate release-grade producer fixtures
         run: python scripts/validate_producer_ingest_fixtures.py --pcs-core pcs-core --release-grade
-        continue-on-error: true
 
       - name: Producer offline gate
         run: |
