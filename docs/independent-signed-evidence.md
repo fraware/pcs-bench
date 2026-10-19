@@ -41,6 +41,8 @@ A validated pair yields `verified_assertions`. The name intentionally avoids the
 
 The new package extra `.[evidence-crypto]` declares the cryptographic dependency and `.[dev]` includes it for complete test-suite execution. CI pins `cryptography==46.0.4` for experiment reproducibility and tests Python 3.11 and 3.12.
 
+The dedicated workflow additionally checks out the experimental producer repository at immutable commit `423aa6d8682117474b22dd960da62b490f148361` into a separate directory, invokes its original `sign_request` and `sign_decision` functions in a **separate Python interpreter**, then validates their real signed wire output using only this independent verifier. The producer private keys remain ephemeral; only public keys and signed records are transferred to the consumer. This compatibility check still does not establish that the issuer actually ran ACS or that an effect occurred.
+
 Run from a clean checkout:
 
 ```bash
