@@ -305,8 +305,14 @@ def _verify_reproduce_smoke(
             "missing_sections": missing,
         }
 
-    check_values = [c.get("ok") for c in checks.values() if isinstance(c, dict)]
-    passed = bool(check_values) and all(check_values)
+    check_values = [
+        c.get("ok")
+        for c in checks.values()
+        if isinstance(c, dict) and c.get("applicability") != "not_applicable"
+    ]
+    # Not applicable is not evidence of success; all *applicable* checks must
+    # pass, and at least one applicable reproduction check must have run.
+    passed = bool(check_values) and all(value is True for value in check_values)
     if not passed:
         result.valid = False
     return _reproduction_report_payload(packet_dir, checks, passed=passed)
